@@ -55,6 +55,11 @@
   label.coche{ display:flex; gap:8px; align-items:center; font-weight:400; margin:8px 0 0; }
   input[type="text"]{ font:inherit; padding:6px 8px; border:1.5px solid var(--bord); border-radius:6px; width:100%; max-width:480px; background:#fff; }
   .vide{ color:#3d3d3d; }
+  button.danger{ background:#fff; color:#ba251a; border-color:#ba251a; }   /* rouge d'erreur du design system : 6,2:1 sur blanc */
+  button.danger:hover{ background:#feeceb; }
+  button.danger.plein{ background:#ba251a; color:#fff; }
+  button.danger.plein:hover{ background:#91170e; }
+  button.danger:disabled{ background:#e9e9e9; color:#4d4d4d; border-color:#8c8c8c; }
   iframe.apercu{ width:100%; height:360px; border:1.5px solid var(--bord); border-radius:8px; background:#fff; margin-top:8px; }
   input[type="color"]{ width:44px; height:36px; padding:2px; border:1.5px solid var(--bord); border-radius:6px; background:#fff; }
   pre{ white-space:pre-wrap; word-break:break-word; background:#fff; border:1.5px solid var(--bord); border-radius:6px; padding:8px; font:12px/1.5 Consolas,monospace; }
@@ -78,7 +83,7 @@
     <button type="button" id="btn-diag">Vérifier l'installation</button>
     <div id="zone-diag" tabindex="-1"></div>
   </section>
-  <footer>Version France Travail 0.2.0 : installation, diagnostic, liens du menu, design et widgets du document.</footer>
+  <footer>Version France Travail 0.3.0 : installation, diagnostic, liens du menu, design et widgets du document.</footer>
 </main>
 
 <script>
@@ -99,7 +104,7 @@ var COLS_CONFIG = [{ id: "Cle", type: "Text" }, { id: "Valeur", type: "Text" }];
 var COLS_PERSONNES = [{ id: "Email", type: "Text" }, { id: "Nom_Complet", type: "Text" }, { id: "Role", type: "ChoiceList" }];
 
 // Réglages créés avec leur valeur par défaut (jamais écrasés s'ils existent déjà).
-var CONFIG_DEFAUT = [["titre", ""], ["logo1_url", ""], ["logo1_alt", "République Française"], ["logo2_url", ""], ["logo2_alt", "France Travail"], ["police_marianne", "oui"],
+var CONFIG_DEFAUT = [["titre", ""], ["logo1_url", ""], ["logo1_alt", "République Française"], ["logo2_url", ""], ["logo2_alt", "France Travail"], ["police_marianne", "oui"], ["titre_widget", "oui"],
   ["couleur_fond", "#ffffff"], ["couleur_texte", "#2e2e31"], ["couleur_primaire", "#283276"], ["couleur_gris", "#f5f5f8"], ["couleur_sombre", "#2e2e31"]];
 
 // Champs de la table des personnes : clé de configuration, libellé, reconnaissance automatique.
@@ -738,7 +743,7 @@ function vueConfirmationAjout() {
     ajouter ? h("pre", { texte: MARQUE + "\n" + balise(a.titre) }) : null,
     h("p", { texte: "Seul un propriétaire du document peut faire cette modification. Si ce widget est ouvert en édition dans un autre onglet, fermez-le d'abord : il pourrait réécrire son ancien code." }),
     h("div", { classe: "actions" }, [
-      h("button", { type: "button", id: "conf-ajout", disabled: etat.occupe, texte: "Confirmer", onclick: function () {
+      h("button", { type: "button", id: "conf-ajout", classe: ajouter ? null : "danger plein", disabled: etat.occupe, texte: ajouter ? "Confirmer" : "Confirmer le retrait", onclick: function () {
         lancer(function () {
           return ecrireCodeWidget(a.id, ajouter ? function (code) { return insererBalise(code, balise(a.titre)); } : retirerBalise).then(function () { etat.ajout = null; });
         }, ajouter ? "Bandeau ajouté au widget. Rechargez la page du widget (F5) pour le voir." : "Bandeau retiré du widget.", ["balise-" + a.id]);
@@ -774,9 +779,13 @@ function vueWidgets() {
         if (st && st.builder && !st.present) actions.push(pb("ajout-" + w.id, "Ajouter au widget", "Ajouter le bandeau au widget « " + nom + " »", function () {
           etat.ajout = { id: w.id, mode: "ajouter", titre: nom }; etat.focus = ["conf-ajout"]; rendre();
         }));
-        if (st && st.builder && st.present && st.marque) actions.push(pb("retrait-" + w.id, "Retirer le bandeau", "Retirer le bandeau du widget « " + nom + " »", function () {
-          etat.ajout = { id: w.id, mode: "retirer", titre: nom }; etat.focus = ["conf-ajout"]; rendre();
-        }));
+        if (st && st.builder && st.present && st.marque) {
+          var retrait = pb("retrait-" + w.id, "Retirer le bandeau", "Retirer le bandeau du widget « " + nom + " »", function () {
+            etat.ajout = { id: w.id, mode: "retirer", titre: nom }; etat.focus = ["conf-ajout"]; rendre();
+          });
+          retrait.classList.add("danger");   // action destructive : en rouge
+          actions.push(retrait);
+        }
       }
       var cellule = [st ? h("span", { classe: "badge " + st.s, texte: st.t }) : "Non vérifié"];
       if (st && st.acces && st.acces !== "full") cellule.push(h("div", { classe: "aide", texte: "Le code du widget demande l'accès « " + st.acces + " » : le bandeau ne pourra pas lire les tables. Remplacez-le par « full »." }));
@@ -811,7 +820,7 @@ function vueWidgets() {
 // ==========================================================
 // DESIGN DU BANDEAU
 // ==========================================================
-var DEF_DESIGN = { titre: "", marianne: true, logo1: "", alt1: "République Française", logo2: "", alt2: "France Travail",
+var DEF_DESIGN = { titre: "", nomWidget: true, marianne: true, logo1: "", alt1: "République Française", logo2: "", alt2: "France Travail",
   fond: "#ffffff", texte: "#2e2e31", primaire: "#283276", gris: "#f5f5f8", sombre: "#2e2e31" };   // design system France Travail : white, gray-90, france-travail-50, gray-05, gray-90
 var CHAMPS_COULEUR = [
   { cle: "fond", libelle: "Fond du bandeau" },
@@ -848,7 +857,7 @@ function texteSur(hex) {   // blanc ou noir : celui qui contraste le plus avec l
 function designDepuis(v) {
   function c(x, d) { x = normaliserHex(x); return hexValide(x) ? x : d; }
   function a(x, d) { return x === undefined ? d : String(x); }
-  return { titre: v.titre || "", marianne: String(v.police_marianne || "oui").trim().toLowerCase() !== "non",
+  return { titre: v.titre || "", nomWidget: String(v.titre_widget || "oui").trim().toLowerCase() !== "non", marianne: String(v.police_marianne || "oui").trim().toLowerCase() !== "non",
     logo1: v.logo1_url || "", alt1: a(v.logo1_alt, DEF_DESIGN.alt1),
     logo2: v.logo2_url || "", alt2: a(v.logo2_alt, DEF_DESIGN.alt2),
     fond: c(v.couleur_fond, DEF_DESIGN.fond), texte: c(v.couleur_texte, DEF_DESIGN.texte), primaire: c(v.couleur_primaire, DEF_DESIGN.primaire),
@@ -875,7 +884,7 @@ function versColonnes(lignesTab, ids) {   // l'inverse de lignes() : le bandeau 
 // (réglages en cours de saisie), les vrais liens du document et une personne fictive.
 function htmlApercu() {
   var d = etat.design, role = etat.apercuRole || "";
-  var cfg = [["titre", d.titre.trim()], ["police_marianne", d.marianne ? "oui" : "non"], ["logo1_url", d.logo1.trim()], ["logo1_alt", d.alt1.trim()],
+  var cfg = [["titre", d.titre.trim()], ["titre_widget", d.nomWidget ? "oui" : "non"], ["police_marianne", d.marianne ? "oui" : "non"], ["logo1_url", d.logo1.trim()], ["logo1_alt", d.alt1.trim()],
     ["logo2_url", d.logo2.trim()], ["logo2_alt", d.alt2.trim()],
     ["couleur_fond", normaliserHex(d.fond)], ["couleur_texte", normaliserHex(d.texte)], ["couleur_primaire", normaliserHex(d.primaire)],
     ["couleur_gris", normaliserHex(d.gris)], ["couleur_sombre", normaliserHex(d.sombre)],
@@ -947,6 +956,7 @@ function vueDesign() {
     return h("div", {}, [h("label", { "for": "d-" + c.cle, texte: c.libelle }), h("div", { classe: "rang" }, [pipette, texte])]);
   });
 
+  var nomWidget = h("input", { type: "checkbox", id: "d-nomwidget", checked: d.nomWidget, onchange: function () { d.nomWidget = nomWidget.checked; maj(); } });
   var marianne = h("input", { type: "checkbox", id: "d-marianne", checked: d.marianne, onchange: function () { d.marianne = marianne.checked; maj(); } });
   var ouvert = h("input", { type: "checkbox", id: "d-ouvert", checked: etat.apercuOuvert !== false, onchange: function () { etat.apercuOuvert = ouvert.checked; maj(); } });
   var roles = etat.rolesConnus, choixRole = null;
@@ -963,7 +973,9 @@ function vueDesign() {
     h("p", { texte: "Réglages essentiels, communs à tous les widgets qui affichent le bandeau. Ils sont pris en compte au prochain chargement de chaque widget. Les valeurs par défaut sont celles du design system France Travail." })
   ].concat(
     champ("d-titre", "Titre du menu (facultatif, 60 caractères maximum)", "titre", { maxlength: "60" }),
-    [h("label", { "for": "d-marianne", classe: "coche" }, [marianne, "Utiliser la police Marianne pour le titre"]),
+    [h("label", { "for": "d-nomwidget", classe: "coche" }, [nomWidget, "Ajouter le nom du widget après le titre"]),
+    h("p", { classe: "vide", texte: "Le nom est celui de la page du widget, repris dans la balise (attribut data-titre). Décoché, seul le titre ci-dessus s'affiche, quel que soit le widget." }),
+    h("label", { "for": "d-marianne", classe: "coche" }, [marianne, "Utiliser la police Marianne pour le titre"]),
     h("p", { classe: "vide", texte: "La police est chargée depuis cdn.jsdelivr.net, le réseau de diffusion du design system de l'État. Décochée, le titre utilise la police du système et aucun fichier n'est chargé." }),
     blocLogo(1), blocLogo(2),
     h("fieldset", {}, [h("legend", { texte: "Couleurs" })].concat(champsCouleur, [contrastes])),
@@ -975,7 +987,7 @@ function vueDesign() {
         erreurForm.textContent = e;
         if (e) return;
         lancer(function () {
-          var paires = [["titre", d.titre.trim()], ["police_marianne", d.marianne ? "oui" : "non"], ["logo1_url", d.logo1.trim()], ["logo1_alt", d.alt1.trim()],
+          var paires = [["titre", d.titre.trim()], ["titre_widget", d.nomWidget ? "oui" : "non"], ["police_marianne", d.marianne ? "oui" : "non"], ["logo1_url", d.logo1.trim()], ["logo1_alt", d.alt1.trim()],
             ["logo2_url", d.logo2.trim()], ["logo2_alt", d.alt2.trim()],
             ["couleur_fond", d.fond], ["couleur_texte", d.texte], ["couleur_primaire", d.primaire], ["couleur_gris", d.gris], ["couleur_sombre", d.sombre]];
           return ecrire(actionsInstallation(etat.doc, etat.cfg, { creerPersonnes: false, paires: paires })).then(function () { etat.design = null; });

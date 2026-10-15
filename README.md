@@ -83,6 +83,10 @@ et la même logique : tout est réglé dans Grist. `v1/` n'est pas modifié.
   Sur un document déjà installé avec `v1/`, le configurateur `ft/` propose « Compléter les tables » : il ajoute les colonnes
   et les réglages manquants sans toucher aux données existantes.
 - **Deux logos facultatifs** (adresse, texte alternatif obligatoire) : adresse vide, rien d'affiché. Les logos ne sont pas cliquables.
+- **Nom du widget** : le titre affiche « Titre - Nom du widget » (le nom vient de la balise, attribut `data-titre`) ; réglage
+  `titre_widget` (`oui` par défaut, `non` pour n'afficher que le titre), case dans l'onglet Design.
+- **Liens vers des pages du document** : adresse de la forme `…/ID/NOM-DU-DOCUMENT/p/N`, comme celles que Grist écrit lui-même.
+  Sans le nom du document, Grist prend « p » pour ce nom et ouvre la première page.
 - **Réglages de design** dans `Bandeau_config` : `logo1_*`, `logo2_*`, `couleur_fond`, `couleur_texte`, `couleur_primaire`,
   `couleur_gris`, `couleur_sombre`. Valeurs par défaut : white, gray-90, france-travail-50, gray-05, gray-90.
 - **Pas de recherche, de notifications ni de menu burger** (volontairement). Sur écran étroit, le bandeau passe sur plusieurs lignes.

@@ -1,5 +1,5 @@
 /* ==========================================================
-   bandeau.js — bandeau de navigation « France Travail » pour widgets Grist (version 0.2.0)
+   bandeau.js — bandeau de navigation « France Travail » pour widgets Grist (version 0.3.0)
 
    UTILISATION, dans le <head> d'un widget personnalisé, APRÈS le script de l'API Grist :
 
@@ -8,7 +8,8 @@
 
    et, dans le widget :  grist.ready({ requiredAccess: "full" });
 
-   - data-titre est facultatif : il s'ajoute au titre du menu (« Titre du menu - Nom du widget »).
+   - data-titre est facultatif : il s'ajoute au titre du menu (« Titre du menu - Nom du widget »), sauf si le réglage
+     titre_widget de Bandeau_config vaut « non ».
    - Tout le reste (titre, logos, couleurs, liens, groupes, menu utilisateur, rôles) est lu dans les tables
      du document : Bandeau_config, Bandeau_liens et la table des personnes. Aucun fichier à régénérer.
    - Appels externes : les logos (adresses fournies) et, sauf si police_marianne = non, la police Marianne (gras) depuis
@@ -24,7 +25,7 @@
   var NOM = "BandeauMenu";
   if (window[NOM]) return;   // fichier chargé deux fois : une seule instance
 
-  var VERSION = "bandeau-ft-0.2.0";
+  var VERSION = "bandeau-ft-0.3.0";
   var T_CONFIG = "Bandeau_config", T_LIENS = "Bandeau_liens";
   var DELAIS = [0, 400, 1000, 2000, 4000, 8000];   // le widget peut appeler grist.ready() après le chargement de ce fichier
   var DELAI_LECTURE = 5000;                         // une lecture sans réponse est abandonnée puis retentée
@@ -93,10 +94,13 @@
     }).map(function (x) { return x.l; });
   }
   // Adresse d'une page du document, déduite de l'adresse d'accès à l'API que Grist fournit :
-  //   https://hote/o/org/api/docs/ID  ->  https://hote/o/org/ID/p/N
+  //   https://hote/o/org/api/docs/ID  ->  https://hote/o/org/ID/NOM/p/N
+  // Grist écrit ses pages avec le nom du document avant « p/N » (…/ID/Menu-France-Travail/p/4). Sans ce segment, « p » est pris pour
+  // le nom du document et le numéro de page est perdu : Grist ouvre alors la première page. Le nom exact n'a pas d'importance (Grist
+  // le remplace par le vrai), on met un nom neutre.
   function urlPage(base, n) {
     if (!/\/api\/docs\//.test(base || "")) return "";
-    return base.replace(/\/api\/docs\//, "/").replace(/\/+$/, "") + "/p/" + n;
+    return base.replace(/\/api\/docs\//, "/").replace(/\/+$/, "") + "/doc/p/" + n;
   }
   function identite(m) {
     if (!m) return { label: "Non identifié·e", initiales: "?" };
@@ -262,7 +266,7 @@
     header.appendChild(inner); root.appendChild(header);
 
     ui = { host: host, style: style, logos: logos, titre: titre, nav: nav, liste: listeNav, statut: statut, utilisateur: utilisateur };
-    titre.textContent = titreWidget; titre.hidden = !titreWidget;
+    titre.hidden = true;   // le titre s'affiche une fois les réglages lus (le nom du widget peut être désactivé)
 
     host.addEventListener("pointerdown", function () { host.setAttribute("data-pointeur", ""); }, true);   // interaction à la souris
     document.addEventListener("keydown", function () { host.removeAttribute("data-pointeur"); }, true);    // clavier : l'anneau de focus revient
@@ -330,7 +334,8 @@
     });
     ui.logos.hidden = !ui.logos.childNodes.length;
 
-    var titre = [String(d.cfg.titre || "").trim(), titreWidget].filter(Boolean).join(" - ");
+    var avecNom = String(d.cfg.titre_widget || "oui").trim().toLowerCase() !== "non";   // réglage « nom du widget » (oui par défaut)
+    var titre = [String(d.cfg.titre || "").trim(), avecNom ? titreWidget : ""].filter(Boolean).join(" - ");
     ui.titre.textContent = titre; ui.titre.hidden = !titre;
 
     groupes = [];
@@ -375,6 +380,7 @@
       erreurLecture = msg(e);
       console.warn("[bandeau] menu indisponible :", erreurLecture);
       ui.statut.textContent = "Menu indisponible";   // discret : le détail est dans la console
+      ui.titre.textContent = titreWidget; ui.titre.hidden = !titreWidget;   // réglages illisibles : on garde au moins le nom du widget
     });
   }
 
