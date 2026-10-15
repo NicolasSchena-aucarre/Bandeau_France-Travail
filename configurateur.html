@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Configurer le bandeau de navigation France Travail</title>
+<script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+<style>
+  :root{ --texte:#1a1a1a; --fond:#ffffff; --bord:#595959; --doux:#f4f5f7; --primaire:#0b4fbf; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; padding:24px; font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; color:var(--texte); background:var(--fond); }
+  h1{ font-size:22px; margin:0 0 4px; }
+  h2{ font-size:18px; margin:24px 0 8px; }
+  h3{ font-size:15px; margin:0 0 4px; }
+  p{ margin:0 0 8px; }
+  .sous-titre{ color:#3d3d3d; margin-bottom:16px; }
+  button{ font:inherit; font-weight:600; padding:8px 16px; border-radius:6px; border:2px solid var(--primaire); background:var(--primaire); color:#fff; cursor:pointer; }
+  button.secondaire{ background:#fff; color:var(--primaire); }
+  button:disabled{ border-color:#8c8c8c; background:#e9e9e9; color:#4d4d4d; cursor:not-allowed; }
+  :focus-visible{ outline:3px solid #000; outline-offset:2px; }
+  .actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  .message{ padding:8px 16px; border:1.5px solid var(--bord); border-radius:8px; background:var(--doux); margin:8px 0; }
+  .message:empty{ display:none; }
+  .message.erreur{ border-color:#b00020; background:#fdecee; }
+  .cartes{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; margin:16px 0; }
+  .carte{ border:1.5px solid var(--bord); border-radius:8px; padding:16px; }
+  .carte ul{ padding-left:20px; margin:8px 0 16px; }
+  .etape{ display:flex; gap:16px; align-items:flex-start; padding:16px 0; border-top:1px solid #c9c9c9; }
+  .etape > div{ flex:1; min-width:0; }
+  .badge{ display:inline-block; min-width:84px; text-align:center; padding:2px 8px; border-radius:12px; font-size:13px; font-weight:700; border:1.5px solid; }
+  .badge.ok{ background:#e3f3e8; color:#0b4d22; border-color:#0b4d22; }
+  .badge.avert{ background:#fff3dc; color:#6b3b00; border-color:#6b3b00; }
+  .badge.erreur{ background:#fdecee; color:#8a0019; border-color:#8a0019; }
+  label{ display:block; font-weight:600; margin:16px 0 4px; }
+  select{ font:inherit; padding:6px 8px; border:1.5px solid var(--bord); border-radius:6px; background:#fff; min-width:260px; max-width:100%; }
+  details{ margin-top:8px; }
+  summary{ cursor:pointer; font-weight:600; }
+  .diag{ list-style:none; padding:0; margin:8px 0; }
+  .diag li{ padding:8px 0; border-top:1px solid #c9c9c9; }
+  .aide{ margin-top:4px; color:#3d3d3d; }
+  footer{ margin-top:32px; color:#4d4d4d; font-size:13px; }
+  .onglets{ display:flex; gap:8px; flex-wrap:wrap; margin:16px 0 0; padding-bottom:8px; border-bottom:2px solid #c9c9c9; }
+  .onglets button{ background:#fff; color:var(--primaire); }
+  .onglets button[aria-current="true"]{ background:var(--primaire); color:#fff; text-decoration:underline; }
+  .defil{ overflow-x:auto; }
+  table{ border-collapse:collapse; width:100%; }
+  th, td{ text-align:left; padding:8px; border-bottom:1px solid #c9c9c9; vertical-align:middle; }
+  th{ border-bottom:2px solid var(--texte); }
+  .sr{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+  button.petit{ padding:4px 10px; font-size:14px; }
+  .rang{ display:flex; gap:4px; flex-wrap:wrap; align-items:center; }
+  .panneau{ border:1.5px solid var(--bord); border-radius:8px; padding:8px 16px 16px; margin:16px 0; background:var(--doux); }
+  fieldset{ border:1.5px solid var(--bord); border-radius:8px; margin:16px 0 0; padding:8px 16px 16px; background:#fff; }
+  legend{ font-weight:600; padding:0 4px; }
+  label.coche{ display:flex; gap:8px; align-items:center; font-weight:400; margin:8px 0 0; }
+  input[type="text"]{ font:inherit; padding:6px 8px; border:1.5px solid var(--bord); border-radius:6px; width:100%; max-width:480px; background:#fff; }
+  .vide{ color:#3d3d3d; }
+  iframe.apercu{ width:100%; height:360px; border:1.5px solid var(--bord); border-radius:8px; background:#fff; margin-top:8px; }
+  input[type="color"]{ width:44px; height:36px; padding:2px; border:1.5px solid var(--bord); border-radius:6px; background:#fff; }
+  pre{ white-space:pre-wrap; word-break:break-word; background:#fff; border:1.5px solid var(--bord); border-radius:6px; padding:8px; font:12px/1.5 Consolas,monospace; }
+  textarea{ width:100%; font:12px/1.5 Consolas,monospace; padding:8px; border:1.5px solid var(--bord); border-radius:6px; background:#fff; }
+  @media (max-width:600px){ body{ padding:16px; } .etape{ flex-direction:column; gap:8px; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Configurer le bandeau de navigation France Travail</h1>
+    <p class="sous-titre">Connectez le bandeau aux personnes et aux liens de ce document Grist.</p>
+    <button type="button" class="secondaire" id="btn-actualiser">Actualiser l'état</button>
+  </header>
+  <div id="info" class="message" role="status"></div>
+  <div id="erreur" class="message erreur" role="alert"></div>
+  <div id="racine"></div>
+  <section aria-labelledby="t-diag">
+    <h2 id="t-diag">Vérifier l'installation</h2>
+    <p>Le diagnostic montre ce que voit la personne qui l'exécute. Pour tester un autre profil, ouvrez le document avec ce compte.</p>
+    <button type="button" id="btn-diag">Vérifier l'installation</button>
+    <div id="zone-diag" tabindex="-1"></div>
+  </section>
+  <footer>Version France Travail 0.1.0 : installation, diagnostic, liens du menu, design et widgets du document.</footer>
+</main>
+
+<script>
+"use strict";
+
+// ==========================================================
+// CONSTANTES : structure des tables
+// ==========================================================
+var T_LIENS = "Bandeau_liens", T_CONFIG = "Bandeau_config", T_PERSONNES = "Utilisateurs";
+
+var COLS_LIENS = [
+  { id: "Titre", type: "Text" }, { id: "Url", type: "Text" }, { id: "Page", type: "Int" },
+  { id: "Ordre", type: "Numeric" }, { id: "Roles", type: "ChoiceList" }, { id: "Nouvel_onglet", type: "Bool" },
+  { id: "Icone", type: "Text" }, { id: "Emplacement", type: "Text" }, { id: "Groupe", type: "Text" },
+  { id: "Actif", type: "Bool", isFormula: false, formula: "True" }   // coché par défaut sur les nouvelles lignes
+];
+var COLS_CONFIG = [{ id: "Cle", type: "Text" }, { id: "Valeur", type: "Text" }];
+var COLS_PERSONNES = [{ id: "Email", type: "Text" }, { id: "Nom_Complet", type: "Text" }, { id: "Role", type: "ChoiceList" }];
+
+// Réglages créés avec leur valeur par défaut (jamais écrasés s'ils existent déjà).
+var CONFIG_DEFAUT = [["titre", ""], ["logo1_url", ""], ["logo1_alt", "République Française"], ["logo1_lien", ""], ["logo2_url", ""], ["logo2_alt", "France Travail"], ["logo2_lien", ""],
+  ["couleur_fond", "#ffffff"], ["couleur_texte", "#2e2e31"], ["couleur_primaire", "#283276"], ["couleur_gris", "#f5f5f8"], ["couleur_sombre", "#2e2e31"]];
+
+// Champs de la table des personnes : clé de configuration, libellé, reconnaissance automatique.
+var CHAMPS = [
+  { cle: "users.email", libelle: "Adresse e-mail", requis: true, devine: /mail|courriel/i },
+  { cle: "users.nom_complet", libelle: "Nom complet", devine: /nom.?complet|full.?name/i },
+  { cle: "users.prenom", libelle: "Prénom", devine: /pr[eé]nom|first/i },
+  { cle: "users.nom", libelle: "Nom", devine: /^nom$|^name$|nom.?famille|last/i },
+  { cle: "users.role", libelle: "Rôle", devine: /r[oô]le|profil|droit/i }
+];
+var PAIRES_CREATION = [["users.table", T_PERSONNES], ["users.email", "Email"], ["users.nom_complet", "Nom_Complet"],
+  ["users.prenom", ""], ["users.nom", ""], ["users.role", "Role"]];
+
+// ==========================================================
+// OUTILS
+// ==========================================================
+var etat = { doc: null, cfg: null, an: null, vue: "etapes", brouillon: null, occupe: false,
+  onglet: "installation", liens: [], liensErreur: "", rolesConnus: [], form: null, suppr: null, ajout: null, balise: null, verifs: {}, design: null, apercuRole: "", apercuOuvert: true, baseDoc: "", focus: null };
+
+function msg(e) { return e && e.message ? e.message : String(e); }
+function vide(v) { return v === undefined || v === null || v === ""; }
+function emailLisible(v) { return typeof v === "string" && v.indexOf("@") > 0; }   // une cellule masquée n'est pas une adresse
+function liste(v) {
+  if (typeof v === "string") return v.trim() ? [v.trim()] : [];
+  if (!Array.isArray(v)) return [];
+  return (v[0] === "L" ? v.slice(1) : v).filter(function (x) { return !vide(x); });
+}
+function lignes(t) {   // fetchTable renvoie des colonnes ; on repasse en lignes
+  var cles = Object.keys(t).filter(function (c) { return c !== "id"; });
+  return t.id.map(function (id, i) { var l = { id: id }; cles.forEach(function (c) { l[c] = t[c][i]; }); return l; });
+}
+function h(tag, attrs, enfants) {   // création d'élément ; le texte passe toujours par textContent
+  var e = document.createElement(tag);
+  Object.keys(attrs || {}).forEach(function (k) {
+    var v = attrs[k];
+    if (v === null || v === undefined || v === false) return;
+    if (k === "texte") e.textContent = v;
+    else if (k === "classe") e.className = v;
+    else if (k.slice(0, 2) === "on") e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? "" : v);
+  });
+  (enfants || []).forEach(function (c) { if (c !== null && c !== undefined) e.appendChild(typeof c === "string" ? document.createTextNode(c) : c); });
+  return e;
+}
+function info(t) { document.getElementById("info").textContent = t || ""; }
+function erreur(t) { document.getElementById("erreur").textContent = t || ""; }
+
+// ==========================================================
+// LECTURE DU DOCUMENT
+// ==========================================================
+async function lireDocument() {
+  var noms = ["_grist_Tables", "_grist_Tables_column", "_grist_ACLResources", "_grist_ACLRules", "_grist_Pages", "_grist_Views"];
+  var meta = await Promise.all(noms.map(function (n) { return grist.docApi.fetchTable(n).then(lignes); }));
+  var parId = {}, tables = {};
+  meta[0].forEach(function (t) {
+    if (!t.summarySourceTable && !/^_grist/.test(t.tableId)) { parId[t.id] = t.tableId; tables[t.tableId] = []; }
+  });
+  meta[1].forEach(function (c) {
+    var t = parId[c.parentId];
+    if (t && !/^gristHelper_/.test(c.colId) && c.colId !== "manualSort") tables[t].push({ id: c.colId, label: c.label || c.colId, type: c.type });
+  });
+  var vues = {};
+  meta[5].forEach(function (x) { vues[x.id] = x.name; });
+  var pages = meta[4].map(function (x) { return { viewRef: x.viewRef, nom: vues[x.viewRef] || ("Page " + x.viewRef), indentation: x.indentation || 0, pos: x.pagePos }; })
+    .sort(function (a, b) { return a.pos - b.pos; });
+  var sections = [], colonnesSections = [], sectionsErreur = "";
+  try { var ts = await grist.docApi.fetchTable("_grist_Views_section"); colonnesSections = Object.keys(ts); sections = lignes(ts); }
+  catch (e) { sectionsErreur = msg(e); }
+  return { tables: tables, ressources: meta[2], regles: meta[3], pages: pages, sections: sections, colonnesSections: colonnesSections, sectionsErreur: sectionsErreur };
+}
+
+async function lireConfig(doc) {
+  var valeurs = {}, ids = {};
+  if (doc.tables[T_CONFIG]) {
+    try {
+      lignes(await grist.docApi.fetchTable(T_CONFIG)).forEach(function (l) {
+        if (!vide(l.Cle)) { valeurs[l.Cle] = vide(l.Valeur) ? "" : String(l.Valeur); ids[l.Cle] = l.id; }
+      });
+    } catch (e) { /* signalé par le diagnostic */ }
+  }
+  return { valeurs: valeurs, ids: ids };
+}
+
+function chercherRegle(doc, table, col) {
+  var idsRes = doc.ressources.filter(function (r) { return r.tableId === table && String(r.colIds).split(",").indexOf(col) !== -1; })
+    .map(function (r) { return r.id; });
+  var regles = doc.regles.filter(function (r) { return idsRes.indexOf(r.resource) !== -1; });
+  return { regles: regles, protege: regles.some(function (r) { return /-[CRUDS]*R/.test(r.permissionsText || ""); }) };
+}
+
+function colonnesManquantes(doc) {   // tables du bandeau créées avec une ancienne structure
+  var res = [];
+  [[T_LIENS, COLS_LIENS], [T_CONFIG, COLS_CONFIG]].forEach(function (p) {
+    var cols = doc.tables[p[0]];
+    if (!cols) return;
+    p[1].forEach(function (c) { if (!cols.some(function (k) { return k.id === c.id; })) res.push({ table: p[0], col: c }); });
+  });
+  return res;
+}
+
+function analyser(doc, cfg) {
+  var v = cfg.valeurs, a = { table: v["users.table"] || "", colEmail: v["users.email"] || "" };
+  var cols = doc.tables[a.table];
+  a.usersOk = !!(cols && a.colEmail && cols.some(function (c) { return c.id === a.colEmail; }));
+  a.liensOk = !!doc.tables[T_LIENS];
+  a.configOk = !!doc.tables[T_CONFIG];
+  a.colsManquantes = colonnesManquantes(doc);
+  a.regle = a.usersOk ? chercherRegle(doc, a.table, a.colEmail) : null;
+  return a;
+}
+
+async function charger() {
+  erreur("");
+  try {
+    etat.doc = await lireDocument();
+    etat.cfg = await lireConfig(etat.doc);
+    etat.an = analyser(etat.doc, etat.cfg);
+    etat.liens = []; etat.liensErreur = ""; etat.rolesConnus = [];
+    if (etat.an.liensOk) {
+      try { etat.liens = lignes(await grist.docApi.fetchTable(T_LIENS)); }
+      catch (e) { etat.liensErreur = "Lecture de « " + T_LIENS + " » impossible : " + msg(e); }
+      etat.rolesConnus = await lireRoles();
+      if (etat.liens.some(function (l) { return vide(l.Url) && Number(l.Page) > 0; })) {   // pour l'aperçu des liens vers des pages
+        try { etat.baseDoc = (await grist.docApi.getAccessToken({ readOnly: true })).baseUrl || ""; } catch (e) { etat.baseDoc = ""; }
+      }
+    }
+  } catch (e) {
+    etat.doc = null;
+    erreur("Lecture du document impossible : " + msg(e) + ". Dans le panneau du widget, réglez l'accès sur « Accès complet au document ».");
+  }
+}
+
+// ==========================================================
+// MAPPING
+// ==========================================================
+function tablesCandidates() {
+  return Object.keys(etat.doc.tables).filter(function (t) { return t !== T_LIENS && t !== T_CONFIG; });
+}
+function deviner(colonnes) {
+  var res = {}, pris = {};
+  CHAMPS.forEach(function (c) {
+    var t = colonnes.filter(function (k) { return !pris[k.id] && (c.devine.test(k.id) || c.devine.test(k.label)); })[0];
+    if (t) { res[c.cle] = t.id; pris[t.id] = true; }
+  });
+  return res;
+}
+function brouillonDepuis(doc, cfg, an) {
+  if (an.usersOk) {
+    var cols = {};
+    CHAMPS.forEach(function (c) { cols[c.cle] = cfg.valeurs[c.cle] || ""; });
+    return { table: an.table, cols: cols };
+  }
+  var t = tablesCandidates()[0] || "";
+  return { table: t, cols: deviner(doc.tables[t] || []) };
+}
+function validerMapping(b) {
+  if (!b.table) return "Choisissez une table.";
+  if (!b.cols["users.email"]) return "La colonne « Adresse e-mail » est obligatoire : le bandeau s'en sert pour reconnaître la personne connectée.";
+  var vus = {}, doublon = "";
+  CHAMPS.forEach(function (c) {
+    var col = b.cols[c.cle];
+    if (!col) return;
+    if (vus[col]) doublon = col;
+    vus[col] = true;
+  });
+  return doublon ? "Une même colonne ne peut pas servir à deux champs (« " + doublon + " »)." : "";
+}
+function pairesDepuisBrouillon(b) {
+  return [["users.table", b.table]].concat(CHAMPS.map(function (c) { return [c.cle, b.cols[c.cle] || ""]; }));
+}
+
+// ==========================================================
+// ÉCRITURES (chaque écriture = UN appel : un rechargement du widget ne la coupe pas en deux)
+// ==========================================================
+function actionsInstallation(doc, cfg, opts) {
+  var actions = [];
+  if (opts.creerPersonnes) actions.push(["AddTable", T_PERSONNES, COLS_PERSONNES]);
+  if (!doc.tables[T_LIENS]) actions.push(["AddTable", T_LIENS, COLS_LIENS]);
+  if (!doc.tables[T_CONFIG]) actions.push(["AddTable", T_CONFIG, COLS_CONFIG]);
+  colonnesManquantes(doc).forEach(function (m) {   // colonnes ajoutées aux tables déjà présentes ; les données existantes ne sont pas touchées
+    var info = Object.assign({}, m.col); delete info.id;
+    actions.push(["AddColumn", m.table, m.col.id, info]);
+  });
+  var finale = {}, ordre = [];
+  CONFIG_DEFAUT.forEach(function (p) { if (!(p[0] in cfg.valeurs)) { finale[p[0]] = p[1]; ordre.push(p[0]); } });
+  opts.paires.forEach(function (p) { if (!(p[0] in finale)) ordre.push(p[0]); finale[p[0]] = p[1]; });
+  var ajouts = { Cle: [], Valeur: [] }, majIds = [], majVals = [];
+  ordre.forEach(function (k) {
+    if (k in cfg.ids) {
+      if (cfg.valeurs[k] !== finale[k]) { majIds.push(cfg.ids[k]); majVals.push(finale[k]); }
+    } else { ajouts.Cle.push(k); ajouts.Valeur.push(finale[k]); }
+  });
+  if (ajouts.Cle.length) actions.push(["BulkAddRecord", T_CONFIG, ajouts.Cle.map(function () { return null; }), ajouts]);
+  if (majIds.length) actions.push(["BulkUpdateRecord", T_CONFIG, majIds, { Valeur: majVals }]);
+  return actions;
+}
+
+function actionsRegle(doc, table, col) {
+  var ress = doc.ressources.filter(function (r) { return r.tableId === table && r.colIds === col; })[0];
+  // Un AddRecord reçoit l'identifiant max + 1 : on le prévoit pour poser ressource et règle d'un seul appel.
+  var idRes = ress ? ress.id : doc.ressources.reduce(function (m, x) { return Math.max(m, x.id); }, 0) + 1;
+  var pos = doc.regles.map(function (r) { return r.rulePos; }).filter(function (p) { return typeof p === "number"; });
+  var min = pos.length ? Math.min.apply(null, pos) : 1;
+  var actions = [];
+  if (!ress) actions.push(["AddRecord", "_grist_ACLResources", null, { tableId: table, colIds: col }]);
+  actions.push(["AddRecord", "_grist_ACLRules", null, {
+    resource: idRes,
+    aclFormula: "user.Email != rec." + col,
+    aclFormulaParsed: JSON.stringify(["NotEq", ["Attr", ["Name", "user"], "Email"], ["Attr", ["Name", "rec"], col]]),
+    permissionsText: "-R",
+    rulePos: min > 0 ? min / 2 : min - 1,   // avant les règles existantes
+    memo: "Bandeau de navigation : chaque personne ne voit que son propre e-mail"
+  }]);
+  return actions;
+}
+
+async function lancer(fn, succes, focus) {
+  if (etat.occupe) return;
+  etat.occupe = true; erreur(""); info("Opération en cours…"); rendre();
+  try {
+    await fn();
+    await charger();
+    info(succes || "");
+    if (focus) etat.focus = focus;
+  } catch (e) {
+    info(""); erreur("Opération impossible : " + msg(e));
+  }
+  etat.occupe = false; rendre();
+}
+
+function installer(creer) {
+  var paires = creer ? PAIRES_CREATION : pairesDepuisBrouillon(etat.brouillon);
+  return grist.docApi.applyUserActions(actionsInstallation(etat.doc, etat.cfg, { creerPersonnes: creer, paires: paires }))
+    .then(function () { etat.vue = "etapes"; });
+}
+async function poserRegle() {
+  await grist.docApi.applyUserActions(actionsRegle(etat.doc, etat.an.table, etat.an.colEmail));
+  await charger();
+  if (!etat.an || !etat.an.regle || !etat.an.regle.protege) throw new Error("la règle n'apparaît pas après l'écriture. Vérifiez dans « Règles d'accès ».");
+}
+
+// ==========================================================
+// LIENS DU MENU
+// ==========================================================
+function urlHttps(v) {   // seules les adresses https sont acceptées comme cible
+  v = String(v || "").trim();
+  if (!/^https:\/\/[^\s]+$/i.test(v)) return "";
+  try { return new URL(v).protocol === "https:" ? v : ""; } catch (e) { return ""; }
+}
+function nbGraphemes(s) {   // un emoji compte pour 1, même composé de plusieurs caractères
+  s = String(s || "");
+  if (typeof Intl !== "undefined" && Intl.Segmenter) return Array.from(new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(s)).length;
+  return Array.from(s).length;
+}
+// Tri par Ordre ; les lignes sans Ordre passent après, dans l'ordre de la table.
+function trierLiens(liens) {
+  return liens.map(function (l, i) { return { l: l, i: i }; }).sort(function (a, b) {
+    var oa = vide(a.l.Ordre), ob = vide(b.l.Ordre);
+    if (oa && ob) return a.i - b.i;
+    if (oa) return 1;
+    if (ob) return -1;
+    return (Number(a.l.Ordre) - Number(b.l.Ordre)) || (a.i - b.i);
+  }).map(function (x) { return x.l; });
+}
+function cibleDe(l) {
+  if (!vide(l.Url)) return { type: "url", url: String(l.Url) };
+  return Number(l.Page) > 0 ? { type: "page", page: Number(l.Page) } : { type: "aucune" };
+}
+function rolesGeres() {   // le champ « Rôles » n'a de sens que si la table des personnes a une colonne de rôle
+  var c = etat.cfg.valeurs["users.role"];
+  return !!(etat.an.usersOk && c && etat.doc.tables[etat.an.table].some(function (k) { return k.id === c; }));
+}
+async function lireRoles() {
+  var set = {}, col = etat.cfg.valeurs["users.role"];
+  function ajouter(v) { if (Array.isArray(v) && v[0] === "C") return; liste(v).forEach(function (r) { set[r] = true; }); }   // ["C"] = cellule masquée
+  if (etat.an.usersOk && col) {
+    try { ((await grist.docApi.fetchTable(etat.an.table))[col] || []).forEach(ajouter); } catch (e) { /* liste partielle */ }
+  }
+  etat.liens.forEach(function (l) { ajouter(l.Roles); });
+  return Object.keys(set).sort(function (a, b) { return a.localeCompare(b, "fr"); });
+}
+function pagesChoisissables() {
+  return etat.doc.pages.filter(function (p) { return p.nom !== T_LIENS && p.nom !== T_CONFIG; });
+}
+
+var ICONES_MENU = [["", "Aucune"], ["maison", "Maison"], ["engrenage", "Engrenage"], ["deconnexion", "Déconnexion"]];
+function normaliser(s) { return String(s == null ? "" : s).trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
+function estUtilisateur(l) { return /^(menu )?utilisateur/.test(normaliser(l.Emplacement)); }   // vide ou « Navigation » : barre de navigation
+function groupesConnus() {
+  var vus = {}, res = [];
+  etat.liens.forEach(function (l) {
+    var g = String(l.Groupe == null ? "" : l.Groupe).trim();
+    if (g && !estUtilisateur(l) && !vus[normaliser(g)]) { vus[normaliser(g)] = true; res.push(g); }
+  });
+  return res.sort(function (a, b) { return a.localeCompare(b, "fr"); });
+}
+
+function formVide() { return { id: null, titre: "", cible: "url", page: "", url: "", roles: [], autre: "", onglet: false, emplacement: "navigation", groupe: "", icone: "", actif: true }; }
+function formDepuis(l) {
+  var c = cibleDe(l), ic = String(l.Icone || "");
+  return { id: l.id, titre: String(l.Titre || ""), cible: c.type === "page" ? "page" : "url", page: c.page ? String(c.page) : "", url: c.url || "",
+    roles: liste(l.Roles), autre: "", onglet: !!l.Nouvel_onglet, emplacement: estUtilisateur(l) ? "utilisateur" : "navigation",
+    groupe: String(l.Groupe == null ? "" : l.Groupe).trim(), icone: ICONES_MENU.some(function (p) { return p[0] === ic; }) ? ic : "", actif: !!l.Actif };
+}
+function rolesDuForm(f) {
+  var tous = f.roles.concat(String(f.autre || "").split(/[,;]/)).map(function (r) { return r.trim(); }).filter(Boolean);
+  return tous.filter(function (r, i) { return tous.indexOf(r) === i; });
+}
+function validerLien(f, pages) {
+  if (!f.titre.trim()) return "Le titre est obligatoire.";
+  if (f.titre.trim().length > 60) return "Le titre est trop long (60 caractères maximum).";
+  if (f.cible === "page") {
+    if (!pages.some(function (p) { return String(p.viewRef) === String(f.page); })) return "Choisissez une page du document.";
+  } else if (!urlHttps(f.url)) return "L'adresse doit commencer par https:// (exemple : https://exemple.fr/outil).";
+  if (f.emplacement === "navigation" && f.groupe.trim().length > 40) return "Le nom du groupe est trop long (40 caractères maximum).";
+  return "";
+}
+function valeursLien(f, avecRoles) {
+  var util = f.emplacement === "utilisateur";
+  var v = { Titre: f.titre.trim(), Url: f.cible === "url" ? urlHttps(f.url) : "", Page: f.cible === "page" ? Number(f.page) : 0,
+    Nouvel_onglet: !!f.onglet, Emplacement: util ? "Utilisateur" : "Navigation", Groupe: util ? "" : f.groupe.trim(), Icone: util ? f.icone : "", Actif: !!f.actif };
+  if (avecRoles) { var r = rolesDuForm(f); v.Roles = r.length ? ["L"].concat(r) : null; }   // sans « Roles » : on ne touche pas aux rôles existants
+  return v;
+}
+function actionsLien(f, liens, avecRoles) {
+  var v = valeursLien(f, avecRoles);
+  if (f.id) return [["UpdateRecord", T_LIENS, f.id, v]];
+  v.Ordre = liens.reduce(function (m, l) { return vide(l.Ordre) ? m : Math.max(m, Number(l.Ordre)); }, 0) + 1;   // en dernier
+  return [["AddRecord", T_LIENS, null, v]];
+}
+// Échange avec le voisin puis renumérote tout (1, 2, 3…) : un seul appel, et ça règle les Ordre vides ou en double.
+function actionsDeplacer(liens, id, delta) {
+  var tri = trierLiens(liens), i = tri.findIndex(function (l) { return l.id === id; }), j = i + delta;
+  if (i < 0 || j < 0 || j >= tri.length) return [];
+  var tmp = tri[i]; tri[i] = tri[j]; tri[j] = tmp;
+  return [["BulkUpdateRecord", T_LIENS, tri.map(function (l) { return l.id; }), { Ordre: tri.map(function (l, k) { return k + 1; }) }]];
+}
+function ecrire(actions) { return actions.length ? grist.docApi.applyUserActions(actions) : Promise.resolve(); }
+
+function ouvrirForm(l) {
+  etat.form = l ? formDepuis(l) : Object.assign(formVide(), { cible: pagesChoisissables().length ? "page" : "url" });
+  etat.suppr = null;
+  etat.focus = ["f-titre"];
+  rendre();
+}
+
+function vueOnglets() {
+  function bouton(id, texte) {
+    return h("button", { type: "button", id: "onglet-" + id, "aria-current": etat.onglet === id ? "true" : null, disabled: etat.occupe, texte: texte,
+      onclick: function () { etat.onglet = id; etat.form = null; etat.suppr = null; etat.ajout = null; rendre(); } });
+  }
+  return h("nav", { classe: "onglets", "aria-label": "Sections du configurateur" }, [bouton("installation", "Installation"), bouton("liens", "Liens du menu"), bouton("design", "Design"), bouton("widgets", "Widgets du document")]);
+}
+
+function vueLiens() {
+  var liens = trierLiens(etat.liens);
+  var sec = h("section", { "aria-labelledby": "t-liens" }, [
+    h("h2", { id: "t-liens", texte: "Liens du menu" }),
+    h("p", { texte: "Ces liens apparaissent dans le menu du bandeau, dans l'ordre ci-dessous. Vous pouvez aussi les modifier directement dans la table « " + T_LIENS + " »." })
+  ]);
+  if (etat.liensErreur) sec.appendChild(h("p", { classe: "message erreur", texte: etat.liensErreur }));
+  if (etat.form) sec.appendChild(vueFormLien());
+  else sec.appendChild(h("div", { classe: "actions" }, [h("button", { type: "button", id: "btn-ajouter", disabled: etat.occupe, texte: "Ajouter un lien", onclick: function () { ouvrirForm(null); } })]));
+  sec.appendChild(liens.length ? tableLiens(liens) : h("p", { classe: "vide", texte: "Aucun lien pour l'instant. Ajoutez le premier avec le bouton « Ajouter un lien »." }));
+  return sec;
+}
+
+function tableLiens(liens) {
+  var noms = {};
+  etat.doc.pages.forEach(function (p) { noms[p.viewRef] = p.nom; });
+  function petit(id, texte, label, desactive, fn) {
+    return h("button", { type: "button", id: id, classe: "secondaire petit", "aria-label": label, disabled: etat.occupe || desactive, texte: texte, onclick: fn });
+  }
+  var corps = h("tbody");
+  liens.forEach(function (l, i) {
+    var titre = vide(l.Titre) ? "(sans titre)" : String(l.Titre), c = cibleDe(l), roles = liste(l.Roles), actif = !!l.Actif;
+    var cible = c.type === "url" ? c.url : c.type === "page" ? (noms[c.page] ? "Page « " + noms[c.page] + " »" : "Page n° " + c.page + " (introuvable)") : "Aucune cible";
+    var actions;
+    if (etat.suppr === l.id) {
+      actions = h("div", { classe: "rang" }, [
+        h("span", { texte: "Supprimer ce lien ?" }),
+        petit("conf-" + l.id, "Confirmer", "Confirmer la suppression de « " + titre + " »", false, function () {
+          lancer(function () { return ecrire([["RemoveRecord", T_LIENS, l.id]]).then(function () { etat.suppr = null; }); }, "Lien supprimé.", ["btn-ajouter"]);
+        }),
+        petit("annul-" + l.id, "Annuler", "Annuler la suppression de « " + titre + " »", false, function () { etat.suppr = null; etat.focus = ["suppr-" + l.id]; rendre(); })
+      ]);
+    } else {
+      actions = h("div", { classe: "rang" }, [
+        petit("modif-" + l.id, "Modifier", "Modifier « " + titre + " »", false, function () { ouvrirForm(l); }),
+        petit("actif-" + l.id, actif ? "Désactiver" : "Activer", (actif ? "Désactiver" : "Activer") + " « " + titre + " »", false, function () {
+          lancer(function () { return ecrire([["UpdateRecord", T_LIENS, l.id, { Actif: !actif }]]); }, actif ? "Lien désactivé." : "Lien activé.", ["actif-" + l.id]);
+        }),
+        petit("suppr-" + l.id, "Supprimer", "Supprimer « " + titre + " »", false, function () { etat.suppr = l.id; etat.focus = ["conf-" + l.id]; rendre(); })
+      ]);
+    }
+    corps.appendChild(h("tr", {}, [
+      h("td", {}, [h("div", { classe: "rang" }, [
+        String(i + 1),
+        petit("monter-" + l.id, "↑", "Monter « " + titre + " »", i === 0, function () {
+          lancer(function () { return ecrire(actionsDeplacer(etat.liens, l.id, -1)); }, "Ordre modifié.", ["monter-" + l.id, "descendre-" + l.id]);
+        }),
+        petit("descendre-" + l.id, "↓", "Descendre « " + titre + " »", i === liens.length - 1, function () {
+          lancer(function () { return ecrire(actionsDeplacer(etat.liens, l.id, 1)); }, "Ordre modifié.", ["descendre-" + l.id, "monter-" + l.id]);
+        })
+      ])]),
+      h("td", { texte: titre }),
+      h("td", { texte: estUtilisateur(l) ? "Menu utilisateur" : (String(l.Groupe || "").trim() ? "Navigation › " + String(l.Groupe).trim() : "Navigation") }),
+      h("td", { texte: cible }),
+      h("td", { texte: roles.length ? roles.join(", ") : "Tout le monde" }),
+      h("td", {}, [h("span", { classe: "badge " + (actif ? "ok" : "avert"), texte: actif ? "Actif" : "Inactif" })]),
+      h("td", {}, [actions])
+    ]));
+  });
+  var tete = h("tr", {}, ["Ordre", "Titre", "Emplacement", "Cible", "Visible par", "État", "Actions"].map(function (t) { return h("th", { scope: "col", texte: t }); }));
+  return h("div", { classe: "defil" }, [h("table", {}, [h("caption", { classe: "sr", texte: "Liens du menu, dans l'ordre d'affichage" }), h("thead", {}, [tete]), corps])]);
+}
+
+function vueFormLien() {
+  var f = etat.form, pages = pagesChoisissables(), avecRoles = rolesGeres();
+  var erreurForm = h("p", { role: "alert" });
+  var titre = h("input", { type: "text", id: "f-titre", maxlength: "60", value: f.titre, "aria-required": "true", oninput: function () { f.titre = titre.value; } });
+
+  var selPage = h("select", { id: "f-page", onchange: function () { f.page = selPage.value; } });
+  selPage.appendChild(h("option", { value: "", texte: "— Choisir une page —" }));
+  pages.forEach(function (p) { selPage.appendChild(h("option", { value: String(p.viewRef), texte: (p.indentation > 0 ? "— " : "") + p.nom })); });
+  selPage.value = f.page;
+  var url = h("input", { type: "text", id: "f-url", value: f.url, placeholder: "https://exemple.fr/outil", oninput: function () { f.url = url.value; } });
+  var blocPage = h("div", {}, [h("label", { "for": "f-page", texte: "Page du document" }), selPage]);
+  var blocUrl = h("div", {}, [h("label", { "for": "f-url", texte: "Adresse (https://…)" }), url]);
+  function majCible() { blocPage.hidden = f.cible !== "page"; blocUrl.hidden = f.cible !== "url"; }
+  function radio(val, id, texte, dispo) {
+    var r = h("input", { type: "radio", name: "f-cible", id: id, value: val, checked: f.cible === val, disabled: !dispo, onchange: function () { f.cible = val; majCible(); } });
+    return h("label", { "for": id, classe: "coche" }, [r, texte]);
+  }
+  var champCible = h("fieldset", {}, [
+    h("legend", { texte: "Où mène ce lien ?" }),
+    radio("page", "f-cible-page", "Une page de ce document", pages.length > 0),
+    radio("url", "f-cible-url", "Une adresse externe (site ou autre document Grist)", true),
+    blocPage, blocUrl
+  ]);
+  majCible();
+
+  var champRoles = null;
+  if (avecRoles) {
+    var tous = etat.rolesConnus.concat(f.roles.filter(function (r) { return etat.rolesConnus.indexOf(r) === -1; }));
+    var autre = h("input", { type: "text", id: "f-autre", value: f.autre, oninput: function () { f.autre = autre.value; } });
+    var cases = tous.map(function (r, i) {
+      var c = h("input", { type: "checkbox", id: "f-role-" + i, checked: f.roles.indexOf(r) !== -1, onchange: function () {
+        var k = f.roles.indexOf(r);
+        if (c.checked && k === -1) f.roles.push(r);
+        if (!c.checked && k !== -1) f.roles.splice(k, 1);
+      } });
+      return h("label", { "for": "f-role-" + i, classe: "coche" }, [c, r]);
+    });
+    champRoles = h("fieldset", {}, [
+      h("legend", { texte: "Qui voit ce lien ?" }),
+      h("p", { texte: "Sans rôle coché, le lien est visible par tout le monde. Ce tri masque seulement le lien dans le menu : il ne protège ni la page ni le site visé." })
+    ].concat(cases, [h("label", { "for": "f-autre", texte: "Autres rôles (séparés par des virgules)" }), autre]));
+  }
+
+  var groupe = h("input", { type: "text", id: "f-groupe", maxlength: "40", value: f.groupe, list: "f-groupes", oninput: function () { f.groupe = groupe.value; } });
+  var listeG = h("datalist", { id: "f-groupes" }, groupesConnus().map(function (g) { return h("option", { value: g }); }));
+  var selIcone = h("select", { id: "f-icone", onchange: function () { f.icone = selIcone.value; } });
+  ICONES_MENU.forEach(function (p) { selIcone.appendChild(h("option", { value: p[0], texte: p[1] })); });
+  selIcone.value = f.icone;
+  var blocGroupe = h("div", {}, [h("label", { "for": "f-groupe", texte: "Groupe (facultatif)" }), groupe, listeG,
+    h("p", { classe: "vide", texte: "Les liens qui portent le même groupe sont réunis sous un bouton déroulant de ce nom. Sans groupe, le lien est un bouton simple de la barre." })]);
+  var blocIcone = h("div", {}, [h("label", { "for": "f-icone", texte: "Icône (facultatif)" }), selIcone]);
+  function majPlace() { blocGroupe.hidden = f.emplacement !== "navigation"; blocIcone.hidden = f.emplacement !== "utilisateur"; }
+  function radioPlace(val, id, texte) {
+    var r = h("input", { type: "radio", name: "f-place", id: id, value: val, checked: f.emplacement === val, onchange: function () { f.emplacement = val; majPlace(); } });
+    return h("label", { "for": id, classe: "coche" }, [r, texte]);
+  }
+  var champPlace = h("fieldset", {}, [h("legend", { texte: "Où ce lien s'affiche-t-il ?" }),
+    radioPlace("navigation", "f-place-nav", "Dans la barre de navigation"), radioPlace("utilisateur", "f-place-user", "Dans le menu utilisateur (sous le nom de la personne)"), blocGroupe, blocIcone]);
+  majPlace();
+  var onglet = h("input", { type: "checkbox", id: "f-onglet", checked: f.onglet, onchange: function () { f.onglet = onglet.checked; } });
+  var actif = h("input", { type: "checkbox", id: "f-actif", checked: f.actif, onchange: function () { f.actif = actif.checked; } });
+
+  return h("div", { classe: "panneau" }, [
+    h("h3", { texte: f.id ? "Modifier le lien" : "Ajouter un lien" }),
+    h("label", { "for": "f-titre", texte: "Titre (obligatoire)" }), titre,
+    champCible,
+    champPlace,
+    champRoles,
+    h("label", { "for": "f-onglet", classe: "coche" }, [onglet, "Ouvrir dans un nouvel onglet"]),
+    h("label", { "for": "f-actif", classe: "coche" }, [actif, "Lien actif (affiché dans le menu)"]),
+    erreurForm,
+    h("div", { classe: "actions" }, [
+      h("button", { type: "button", disabled: etat.occupe, texte: "Enregistrer", onclick: function () {
+        var e = validerLien(f, pages);
+        erreurForm.textContent = e;
+        if (e) return;
+        lancer(function () { return ecrire(actionsLien(f, etat.liens, avecRoles)).then(function () { etat.form = null; }); },
+          f.id ? "Lien modifié." : "Lien ajouté.", ["btn-ajouter"]);
+      } }),
+      h("button", { type: "button", classe: "secondaire", disabled: etat.occupe, texte: "Annuler", onclick: function () { etat.form = null; etat.focus = ["btn-ajouter"]; rendre(); } })
+    ])
+  ]);
+}
+
+// ==========================================================
+// WIDGETS DU DOCUMENT
+// ==========================================================
+var ACCES = { "full": "Accès complet", "read table": "Lecture de la table", "none": "Aucun accès" };
+
+function jsonSur(v) {
+  if (v && typeof v === "object") return v;
+  try { var x = JSON.parse(v); return x && typeof x === "object" ? x : {}; } catch (e) { return {}; }
+}
+// Les widgets personnalisés sont des « sections » de page de type « custom ». Où Grist range leur adresse et leur
+// niveau d'accès n'est pas documenté : on cherche aux deux endroits connus, et le bouton « données techniques » montre le brut.
+function widgetsPersonnalises(doc) {
+  var pages = {};
+  doc.pages.forEach(function (p) { pages[p.viewRef] = p.nom; });
+  return doc.sections.filter(function (x) { return x.parentKey === "custom"; }).map(function (x) {
+    var opt = jsonSur(x.options), def = jsonSur(opt.customView !== undefined ? opt.customView : x.customView);
+    var url = typeof def.url === "string" ? def.url : "";
+    var builder = /widget-?builder/i.test([url, def.widgetId, def.widgetDef && def.widgetDef.url, x.title].join(" "));
+    // Custom Widget Builder : le code du widget est stocké dans le document (customView.widgetOptions._html et _js).
+    var wo = builder && def.widgetOptions && typeof def.widgetOptions === "object" ? def.widgetOptions : null;
+    var html = wo && typeof wo._html === "string" ? wo._html : null, js = wo && typeof wo._js === "string" ? wo._js : "";
+    var m = /requiredAccess\s*:\s*["']([^"']+)["']/.exec((html || "") + "\n" + js);
+    return { id: x.id, page: pages[x.parentId] || "", titre: String(x.title || ""), url: url, acces: String(def.access || ""),
+      widgetId: String(def.widgetId || ""), builder: builder, configurateur: /configurateur/i.test(url),
+      codeLu: html !== null, codeHtml: html || "", codeJs: js, accesCode: m ? m[1] : "" };
+  });
+}
+
+// Vrai chargement du bandeau : une balise <script src="…/bandeau.js">. Une simple mention du nom (commentaire, texte, chaîne) ne compte pas.
+function aBalise(texte) {
+  return /<script\b[^>]*\bsrc\s*=\s*["'](?:[^"']*\/)?bandeau\.js(?:[?#][^"']*)?["']/i.test(String(texte));
+}
+
+// État du bandeau dans un widget : lu dans le code pour un Builder (déjà dans le document), sinon après « Vérifier ».
+function statutWidget(w, verifs) {
+  if (w.configurateur) return { s: "ok", t: "Non concerné", acces: "" };
+  if (w.builder) {
+    if (!w.codeLu) return { s: "avert", t: "Code du widget illisible", acces: "" };
+    var present = aBalise(w.codeHtml);
+    return { s: present ? "ok" : "avert", t: present ? "Bandeau présent" : "À ajouter", acces: w.accesCode,
+      builder: true, present: present, marque: w.codeHtml.indexOf(MARQUE) !== -1 };
+  }
+  return verifs[w.id] || null;
+}
+
+// Les deux lignes ajoutées dans le code d'un widget Builder : un repère, puis la balise.
+// Le repère permet de les retirer exactement, sans toucher au reste.
+var MARQUE = "<!" + "-- bandeau-navigation --" + ">";
+function insererBalise(html, tag) {
+  var lignes2 = MARQUE + "\n" + tag + "\n", m = /<\/head\s*>/i.exec(html);
+  return m ? html.slice(0, m.index) + lignes2 + html.slice(m.index) : lignes2 + html;   // sans <head> : au début
+}
+function retirerBalise(html) {
+  var i = html.indexOf(MARQUE);
+  if (i === -1) return html;
+  var fin = html.indexOf("</" + "script>", i);
+  if (fin === -1 || !/bandeau\.js/i.test(html.slice(i, fin))) return html;
+  var j = fin + 9;
+  if (html.charAt(j) === "\r") j++;
+  if (html.charAt(j) === "\n") j++;
+  return html.slice(0, i) + html.slice(j);
+}
+// Réécrit le code HTML dans les options d'une section (chaîne JSON contenant une chaîne JSON).
+function modifierCode(optionsTexte, fn) {
+  var o = JSON.parse(optionsTexte), cvTexte = typeof o.customView === "string", cv = cvTexte ? JSON.parse(o.customView) : o.customView;
+  if (!cv || !cv.widgetOptions || typeof cv.widgetOptions._html !== "string") throw new Error("code du widget introuvable");
+  cv.widgetOptions._html = fn(cv.widgetOptions._html);
+  o.customView = cvTexte ? JSON.stringify(cv) : cv;
+  return JSON.stringify(o);
+}
+function sansHtml(optionsTexte) {   // tout sauf le code HTML : sert à vérifier qu'on n'a rien touché d'autre
+  var o = JSON.parse(optionsTexte), cvTexte = typeof o.customView === "string", cv = cvTexte ? JSON.parse(o.customView) : o.customView;
+  if (cv && cv.widgetOptions) delete cv.widgetOptions._html;
+  o.customView = cvTexte ? JSON.stringify(cv) : cv;
+  return JSON.stringify(o);
+}
+async function ecrireCodeWidget(id, fn) {
+  // Relecture juste avant l'écriture : on part de la version la plus récente du document.
+  var ligne = lignes(await grist.docApi.fetchTable("_grist_Views_section")).filter(function (x) { return x.id === id; })[0];
+  if (!ligne) throw new Error("widget introuvable");
+  var nouveau = modifierCode(ligne.options, fn);
+  if (nouveau === ligne.options) throw new Error("rien à modifier dans ce widget");
+  if (sansHtml(nouveau) !== sansHtml(ligne.options)) throw new Error("modification inattendue : rien n'a été écrit");
+  await grist.docApi.applyUserActions([["UpdateRecord", "_grist_Views_section", id, { options: nouveau }]]);
+}
+
+function urlBandeau() { return new URL("bandeau.js", location.href).href; }   // à côté de ce configurateur
+function attr(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+function balise(titre) { return '<script src="' + attr(urlBandeau()) + '" data-titre="' + attr(titre) + '"></' + 'script>'; }
+
+async function verifierWidgets() {
+  var verifs = {};
+  await Promise.all(widgetsPersonnalises(etat.doc).map(async function (w) {
+    if (w.configurateur || w.builder) return;   // le Builder se lit directement dans le document
+    if (!/^https:\/\//i.test(w.url)) { verifs[w.id] = { s: "avert", t: "Adresse non lisible", acces: "" }; return; }
+    var ctl = new AbortController(), minuteur = setTimeout(function () { ctl.abort(); }, 8000);
+    try {
+      var rep = await fetch(w.url, { cache: "no-store", signal: ctl.signal });
+      if (!rep.ok) throw new Error("HTTP " + rep.status);
+      var txt = await rep.text(), m = /requiredAccess\s*:\s*["']([^"']+)["']/.exec(txt);   // le texte n'est jamais interprété
+      var present = aBalise(txt);
+      verifs[w.id] = { s: present ? "ok" : "avert", t: present ? "Bandeau présent" : "À ajouter", acces: m ? m[1] : "" };
+    } catch (e) { verifs[w.id] = { s: "avert", t: "Impossible à vérifier (" + msg(e) + ")", acces: "" }; }
+    finally { clearTimeout(minuteur); }
+  }));
+  etat.verifs = verifs;
+}
+
+function copierBalise(texte) {   // appelé dans le clic : la zone est déjà sélectionnée
+  var fait = false;
+  try { fait = document.execCommand("copy"); } catch (e) { /* indisponible */ }
+  if (fait) { info("Balise copiée dans le presse-papiers."); return; }
+  var sel = "Copie automatique impossible : la balise est sélectionnée, utilisez Ctrl+C.";
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(texte).then(function () { info("Balise copiée dans le presse-papiers."); }, function () { info(sel); });
+  else info(sel);
+}
+function tronquer(v) { return typeof v === "string" && v.length > 1200 ? v.slice(0, 1200) + "… (tronqué, " + v.length + " caractères)" : v; }
+function donneesTechniques() {
+  var doc = etat.doc;
+  return JSON.stringify({
+    colonnes_de_la_table_des_sections: doc.colonnesSections,
+    sections_personnalisees: doc.sections.filter(function (x) { return x.parentKey === "custom"; }).map(function (x) {
+      var o = {}; Object.keys(x).forEach(function (k) { o[k] = tronquer(x[k]); }); return o;
+    }),
+    interprete: widgetsPersonnalises(doc).map(function (w) { var o = Object.assign({}, w); o.codeHtml = w.codeHtml.length + " caractères"; o.codeJs = w.codeJs.length + " caractères"; return o; })
+  }, null, 2);
+}
+
+function vueConfirmationAjout() {
+  var a = etat.ajout, ajouter = a.mode === "ajouter";
+  return h("div", { classe: "panneau", role: "group", "aria-labelledby": "t-ajout" }, [
+    h("h3", { id: "t-ajout", texte: (ajouter ? "Ajouter le bandeau au widget de la page « " : "Retirer le bandeau du widget de la page « ") + a.titre + " »" }),
+    h("p", { texte: ajouter
+      ? "Le code HTML de ce widget (stocké dans le document) sera modifié : ces deux lignes seront ajoutées dans l'en-tête (<head>), ou au début du code si le widget n'en a pas."
+      : "Les deux lignes ajoutées par le configurateur seront retirées du code HTML du widget. Le reste du code n'est pas touché." }),
+    ajouter ? h("pre", { texte: MARQUE + "\n" + balise(a.titre) }) : null,
+    h("p", { texte: "Seul un propriétaire du document peut faire cette modification. Si ce widget est ouvert en édition dans un autre onglet, fermez-le d'abord : il pourrait réécrire son ancien code." }),
+    h("div", { classe: "actions" }, [
+      h("button", { type: "button", id: "conf-ajout", disabled: etat.occupe, texte: "Confirmer", onclick: function () {
+        lancer(function () {
+          return ecrireCodeWidget(a.id, ajouter ? function (code) { return insererBalise(code, balise(a.titre)); } : retirerBalise).then(function () { etat.ajout = null; });
+        }, ajouter ? "Bandeau ajouté au widget. Rechargez la page du widget (F5) pour le voir." : "Bandeau retiré du widget.", ["balise-" + a.id]);
+      } }),
+      h("button", { type: "button", classe: "secondaire", disabled: etat.occupe, texte: "Annuler", onclick: function () { etat.ajout = null; etat.focus = ["balise-" + a.id]; rendre(); } })
+    ])
+  ]);
+}
+
+function vueWidgets() {
+  var doc = etat.doc, ws = widgetsPersonnalises(doc), verifs = etat.verifs || {};
+  var sec = h("section", { "aria-labelledby": "t-widgets" }, [
+    h("h2", { id: "t-widgets", texte: "Widgets du document" }),
+    h("p", { texte: "Pour afficher le bandeau, chaque widget personnalisé doit charger le fichier bandeau.js (une ligne à ajouter dans son code) et demander l'accès complet au document (grist.ready avec requiredAccess « full »)." }),
+    h("p", {}, ["Adresse du bandeau utilisée dans la balise : ", h("strong", { texte: urlBandeau() })])
+  ]);
+  function pb(id, texte, label, fn) { return h("button", { type: "button", id: id, classe: "secondaire petit", disabled: etat.occupe, "aria-label": label, texte: texte, onclick: fn }); }
+  if (doc.sectionsErreur) sec.appendChild(h("p", { classe: "message erreur", texte: "Lecture des widgets impossible : " + doc.sectionsErreur }));
+  else if (!ws.length) sec.appendChild(h("p", { classe: "vide", texte: "Aucun widget personnalisé dans ce document." }));
+  else {
+    sec.appendChild(h("div", { classe: "actions" }, [h("button", { type: "button", id: "btn-verif", classe: "secondaire", disabled: etat.occupe, texte: "Vérifier les widgets hébergés",
+      onclick: function () { lancer(verifierWidgets, "Vérification terminée.", ["btn-verif"]); } })]));
+    var corps = h("tbody");
+    ws.forEach(function (w) {
+      var st = statutWidget(w, verifs), titre = w.titre || "(sans titre)", nom = w.page || titre;
+      var type = w.configurateur ? "Ce configurateur" : w.builder ? "Custom Widget Builder (code dans le document)" : (w.url ? w.url : "Adresse non lue");
+      var actions = [];
+      if (!w.configurateur) {
+        actions.push(pb("balise-" + w.id, "Copier la balise", "Copier la balise pour « " + nom + " »", function () {
+          etat.balise = { id: w.id, titre: nom, builder: w.builder, texte: balise(w.page || w.titre) };
+          etat.focus = ["zone-balise"]; rendre(); copierBalise(etat.balise.texte);
+        }));
+        if (st && st.builder && !st.present) actions.push(pb("ajout-" + w.id, "Ajouter au widget", "Ajouter le bandeau au widget « " + nom + " »", function () {
+          etat.ajout = { id: w.id, mode: "ajouter", titre: nom }; etat.focus = ["conf-ajout"]; rendre();
+        }));
+        if (st && st.builder && st.present && st.marque) actions.push(pb("retrait-" + w.id, "Retirer le bandeau", "Retirer le bandeau du widget « " + nom + " »", function () {
+          etat.ajout = { id: w.id, mode: "retirer", titre: nom }; etat.focus = ["conf-ajout"]; rendre();
+        }));
+      }
+      var cellule = [st ? h("span", { classe: "badge " + st.s, texte: st.t }) : "Non vérifié"];
+      if (st && st.acces && st.acces !== "full") cellule.push(h("div", { classe: "aide", texte: "Le code du widget demande l'accès « " + st.acces + " » : le bandeau ne pourra pas lire les tables. Remplacez-le par « full »." }));
+      corps.appendChild(h("tr", {}, [
+        h("td", { texte: w.page || "—" }),
+        h("td", { texte: titre }),
+        h("td", { texte: type }),
+        h("td", {}, [h("span", { classe: "badge " + (w.acces === "full" ? "ok" : "avert"), texte: w.acces ? (ACCES[w.acces] || w.acces) : "Non lu" })]),
+        h("td", {}, cellule),
+        h("td", {}, [h("div", { classe: "rang" }, actions)])
+      ]));
+    });
+    var tete = h("tr", {}, ["Page", "Widget", "Type", "Accès", "Bandeau", "Actions"].map(function (t) { return h("th", { scope: "col", texte: t }); }));
+    sec.appendChild(h("div", { classe: "defil" }, [h("table", {}, [h("caption", { classe: "sr", texte: "Widgets personnalisés du document" }), h("thead", {}, [tete]), corps])]));
+  }
+  if (etat.ajout) sec.appendChild(vueConfirmationAjout());
+  if (etat.balise) {
+    sec.appendChild(h("label", { "for": "zone-balise", texte: "Balise pour « " + etat.balise.titre + " »" }));
+    sec.appendChild(h("textarea", { id: "zone-balise", readonly: true, rows: "2", texte: etat.balise.texte }));
+    sec.appendChild(h("p", { texte: etat.balise.builder
+      ? "Widget créé avec le Custom Widget Builder : le bouton « Ajouter au widget » fait cette modification à votre place, ou collez cette ligne dans la partie HTML du widget."
+      : "Collez cette ligne dans le <head> du widget, après le script de l'API Grist (grist-plugin-api.js). Le widget doit aussi appeler grist.ready({ requiredAccess: \"full\" })." }));
+  }
+  sec.appendChild(h("details", {}, [
+    h("summary", { texte: "Données techniques des widgets (pour le support)" }),
+    h("p", { texte: "Contenu brut lu dans le document. Il peut contenir du code de widget : relisez-le avant de le partager." }),
+    h("textarea", { readonly: true, rows: "10", "aria-label": "Données techniques des widgets", texte: donneesTechniques() })
+  ]));
+  return sec;
+}
+
+// ==========================================================
+// DESIGN DU BANDEAU
+// ==========================================================
+var DEF_DESIGN = { titre: "", logo1: "", alt1: "République Française", lien1: "", logo2: "", alt2: "France Travail", lien2: "",
+  fond: "#ffffff", texte: "#2e2e31", primaire: "#283276", gris: "#f5f5f8", sombre: "#2e2e31" };   // design system France Travail : white, gray-90, france-travail-50, gray-05, gray-90
+var CHAMPS_COULEUR = [
+  { cle: "fond", libelle: "Fond du bandeau" },
+  { cle: "texte", libelle: "Texte et icônes" },
+  { cle: "primaire", libelle: "Couleur principale (titre, avatar)" },
+  { cle: "gris", libelle: "Gris des boutons (survol, menu ouvert)" },
+  { cle: "sombre", libelle: "Fond sombre du bouton utilisateur (survol, ouvert)" }
+];
+function hexValide(v) { return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(String(v || "")); }
+function normaliserHex(v) {   // « 005FCC » -> « #005fcc »
+  v = String(v || "").trim().toLowerCase();
+  return /^([0-9a-f]{3}|[0-9a-f]{6})$/.test(v) ? "#" + v : v;
+}
+function hex6(v) {   // #abc -> #aabbcc (le sélecteur de couleur n'accepte que 6 chiffres)
+  v = normaliserHex(v);
+  if (!hexValide(v)) return "#000000";
+  return v.length === 4 ? "#" + v[1] + v[1] + v[2] + v[2] + v[3] + v[3] : v;
+}
+function luminance(hex) {
+  var c = hex6(hex);
+  return [1, 3, 5].map(function (i) {
+    var x = parseInt(c.substr(i, 2), 16) / 255;
+    return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+  }).reduce(function (s, x, i) { return s + x * [0.2126, 0.7152, 0.0722][i]; }, 0);
+}
+function contraste(a, b) {   // rapport de contraste WCAG
+  var la = luminance(a), lb = luminance(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+function texteSur(hex) {   // blanc ou noir : celui qui contraste le plus avec le fond donné (même règle que bandeau.js)
+  var l = luminance(hex);
+  return (1.05 / (l + 0.05)) >= ((l + 0.05) / 0.05) ? "#ffffff" : "#000000";
+}
+function designDepuis(v) {
+  function c(x, d) { x = normaliserHex(x); return hexValide(x) ? x : d; }
+  function a(x, d) { return x === undefined ? d : String(x); }
+  return { titre: v.titre || "", logo1: v.logo1_url || "", alt1: a(v.logo1_alt, DEF_DESIGN.alt1), lien1: v.logo1_lien || "",
+    logo2: v.logo2_url || "", alt2: a(v.logo2_alt, DEF_DESIGN.alt2), lien2: v.logo2_lien || "",
+    fond: c(v.couleur_fond, DEF_DESIGN.fond), texte: c(v.couleur_texte, DEF_DESIGN.texte), primaire: c(v.couleur_primaire, DEF_DESIGN.primaire),
+    gris: c(v.couleur_gris, DEF_DESIGN.gris), sombre: c(v.couleur_sombre, DEF_DESIGN.sombre) };
+}
+function validerDesign(d) {
+  if (d.titre.trim().length > 60) return "Le titre est trop long (60 caractères maximum).";
+  for (var n = 1; n <= 2; n++) {
+    var u = d["logo" + n].trim(), a = d["alt" + n].trim(), l = d["lien" + n].trim();
+    if (u && !urlHttps(u)) return "Logo " + n + " : l'adresse de l'image doit commencer par https:// (exemple : https://exemple.fr/logo.svg).";
+    if (u && !a) return "Logo " + n + " : le texte alternatif est obligatoire quand une adresse est saisie (par exemple : " + DEF_DESIGN["alt" + n] + ").";
+    if (a.length > 120) return "Logo " + n + " : le texte alternatif est trop long (120 caractères maximum).";
+    if (l && !urlHttps(l)) return "Logo " + n + " : le lien doit commencer par https://.";
+  }
+  var manque = CHAMPS_COULEUR.filter(function (c) { return !hexValide(normaliserHex(d[c.cle])); })[0];
+  return manque ? manque.libelle + " : format attendu #rrggbb (exemple : #283276)." : "";
+}
+function versColonnes(lignesTab, ids) {   // l'inverse de lignes() : le bandeau lit des tables en colonnes
+  var t = { id: lignesTab.map(function (l) { return l.id; }) };
+  ids.forEach(function (c) { t[c] = lignesTab.map(function (l) { return l[c]; }); });
+  return t;
+}
+
+// Aperçu : le VRAI bandeau.js tourne dans une iframe isolée, avec un faux « grist » qui lui sert le brouillon
+// (réglages en cours de saisie), les vrais liens du document et une personne fictive.
+function htmlApercu() {
+  var d = etat.design, role = etat.apercuRole || "";
+  var cfg = [["titre", d.titre.trim()], ["logo1_url", d.logo1.trim()], ["logo1_alt", d.alt1.trim()], ["logo1_lien", d.lien1.trim()],
+    ["logo2_url", d.logo2.trim()], ["logo2_alt", d.alt2.trim()], ["logo2_lien", d.lien2.trim()],
+    ["couleur_fond", normaliserHex(d.fond)], ["couleur_texte", normaliserHex(d.texte)], ["couleur_primaire", normaliserHex(d.primaire)],
+    ["couleur_gris", normaliserHex(d.gris)], ["couleur_sombre", normaliserHex(d.sombre)],
+    ["users.table", "Apercu"], ["users.email", "Email"], ["users.nom_complet", "Nom_Complet"], ["users.role", "Role"]];
+  var donnees = {
+    tables: {
+      Bandeau_config: { id: cfg.map(function (_, i) { return i + 1; }), Cle: cfg.map(function (p) { return p[0]; }), Valeur: cfg.map(function (p) { return p[1]; }) },
+      Bandeau_liens: versColonnes(etat.liens, COLS_LIENS.map(function (c) { return c.id; })),
+      Apercu: { id: [1], Email: ["apercu@exemple.fr"], Nom_Complet: ["Prénom Nom"], Role: [role ? ["L", role] : null] }
+    },
+    base: etat.baseDoc || "https://exemple.fr/o/docs/api/docs/apercu"
+  };
+  var json = JSON.stringify(donnees).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
+  var fin = "<\/script>";
+  return "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><style>body{margin:0;font-family:system-ui,Arial,sans-serif;color:#59736e}p{padding:24px}</style>" +
+    "<script>var D=" + json + ";window.grist={docApi:{fetchTable:function(n){return D.tables[n]?Promise.resolve(D.tables[n]):Promise.reject(new Error('Table not found: '+n));}," +
+    "getAccessToken:function(){return Promise.resolve({baseUrl:D.base,token:''});}}};" + fin +
+    "<script src=\"" + attr(urlBandeau()) + "\" data-titre=\"Nom du widget\">" + fin + "</head><body><p>Contenu du widget…</p>" +
+    (etat.apercuOuvert === false ? "" :
+      "<script>(function(){var t=0,iv=setInterval(function(){var h=document.getElementById('bm-bandeau'),b=h&&h.shadowRoot&&h.shadowRoot.querySelector('.ft-user-zone:not([hidden]) button.ft-user, .ft-item button.ft-btn');" +
+      "if(b){b.click();clearInterval(iv);}else if(++t>40){clearInterval(iv);}},100);})();" + fin) +
+    "</body></html>";
+}
+
+function vueDesign() {
+  if (!etat.design) etat.design = designDepuis(etat.cfg.valeurs);
+  var d = etat.design, minuteur = null;
+  var erreurForm = h("p", { role: "alert" });
+  var apercu = h("iframe", { id: "apercu", title: "Aperçu du bandeau", sandbox: "allow-scripts", classe: "apercu" });
+  var contrastes = h("div", { id: "contrastes" });
+
+  function ligne(id, libelle, a, b) {
+    var el = h("p", { id: id });
+    a = normaliserHex(a); b = normaliserHex(b);
+    if (!hexValide(a) || !hexValide(b)) { el.textContent = libelle + " : saisissez des couleurs valides pour calculer le contraste."; return el; }
+    var c = contraste(a, b), bon = c >= 4.5;
+    el.appendChild(h("span", { classe: "badge " + (bon ? "ok" : "avert"), texte: bon ? "Lisible" : "À vérifier" }));
+    el.appendChild(document.createTextNode(" " + libelle + " : " + (Math.round(c * 10) / 10).toString().replace(".", ",") + ":1" + (bon ? "" : " (minimum conseillé : 4,5:1)")));
+    return el;
+  }
+  function majContrastes() {
+    contrastes.textContent = "";
+    contrastes.appendChild(ligne("c-texte", "Texte sur le fond", d.texte, d.fond));
+    contrastes.appendChild(ligne("c-gris", "Texte sur le gris des boutons", d.texte, d.gris));
+    contrastes.appendChild(ligne("c-primaire", "Titre (couleur principale) sur le fond", d.primaire, d.fond));
+    // Le texte posé sur la couleur principale (initiales) et sur le fond sombre est choisi automatiquement, blanc ou noir :
+    // le meilleur des deux atteint toujours au moins 4,58:1, il n'y a donc rien à signaler.
+  }
+  function maj() {
+    majContrastes();
+    clearTimeout(minuteur);
+    minuteur = setTimeout(function () { apercu.setAttribute("srcdoc", htmlApercu()); }, 250);
+  }
+  function champ(id, libelle, cle, attrs) {
+    var i = h("input", Object.assign({ type: "text", id: id, value: d[cle], oninput: function () { d[cle] = i.value; maj(); } }, attrs || {}));
+    return [h("label", { "for": id, texte: libelle }), i];
+  }
+  function blocLogo(n) {
+    return h("fieldset", {}, [h("legend", { texte: n === 1 ? "Logo 1 (à gauche)" : "Logo 2" })].concat(
+      champ("d-logo" + n, "Adresse de l'image (fichier .svg, en https://)", "logo" + n, { placeholder: "https://exemple.fr/logo.svg" }),
+      champ("d-alt" + n, "Texte alternatif (obligatoire si une adresse est saisie)", "alt" + n, { maxlength: "120" }),
+      champ("d-lien" + n, "Lien au clic sur le logo (facultatif, en https://)", "lien" + n),
+      [h("p", { classe: "vide", texte: "Adresse vide : le logo n'est pas affiché." })]));
+  }
+  var champsCouleur = CHAMPS_COULEUR.map(function (c) {
+    var texte = h("input", { type: "text", id: "d-" + c.cle, maxlength: "7", value: d[c.cle] });
+    var pipette = h("input", { type: "color", id: "d-" + c.cle + "-pick", "aria-label": "Choisir : " + c.libelle, value: hex6(d[c.cle]) });
+    texte.addEventListener("input", function () { d[c.cle] = texte.value; if (hexValide(normaliserHex(texte.value))) pipette.value = hex6(texte.value); maj(); });
+    pipette.addEventListener("input", function () { d[c.cle] = pipette.value; texte.value = pipette.value; maj(); });
+    return h("div", {}, [h("label", { "for": "d-" + c.cle, texte: c.libelle }), h("div", { classe: "rang" }, [pipette, texte])]);
+  });
+
+  var ouvert = h("input", { type: "checkbox", id: "d-ouvert", checked: etat.apercuOuvert !== false, onchange: function () { etat.apercuOuvert = ouvert.checked; maj(); } });
+  var roles = etat.rolesConnus, choixRole = null;
+  if (rolesGeres() && roles.length) {
+    var sel = h("select", { id: "d-role", onchange: function () { etat.apercuRole = sel.value; maj(); } });
+    sel.appendChild(h("option", { value: "", texte: "(aucun rôle)" }));
+    roles.forEach(function (r) { sel.appendChild(h("option", { value: r, texte: r })); });
+    sel.value = etat.apercuRole || "";
+    choixRole = h("div", {}, [h("label", { "for": "d-role", texte: "Voir le menu en tant que" }), sel]);
+  }
+
+  var sec = h("section", { "aria-labelledby": "t-design" }, [
+    h("h2", { id: "t-design", texte: "Design du bandeau" }),
+    h("p", { texte: "Réglages essentiels, communs à tous les widgets qui affichent le bandeau. Ils sont pris en compte au prochain chargement de chaque widget. Les valeurs par défaut sont celles du design system France Travail." })
+  ].concat(
+    champ("d-titre", "Titre du menu (facultatif, 60 caractères maximum)", "titre", { maxlength: "60" }),
+    [blocLogo(1), blocLogo(2),
+    h("fieldset", {}, [h("legend", { texte: "Couleurs" })].concat(champsCouleur, [contrastes])),
+    erreurForm,
+    h("div", { classe: "actions" }, [
+      h("button", { type: "button", id: "btn-design-enreg", disabled: etat.occupe, texte: "Enregistrer le design", onclick: function () {
+        CHAMPS_COULEUR.forEach(function (c) { d[c.cle] = normaliserHex(d[c.cle]); });
+        var e = validerDesign(d);
+        erreurForm.textContent = e;
+        if (e) return;
+        lancer(function () {
+          var paires = [["titre", d.titre.trim()], ["logo1_url", d.logo1.trim()], ["logo1_alt", d.alt1.trim()], ["logo1_lien", d.lien1.trim()],
+            ["logo2_url", d.logo2.trim()], ["logo2_alt", d.alt2.trim()], ["logo2_lien", d.lien2.trim()],
+            ["couleur_fond", d.fond], ["couleur_texte", d.texte], ["couleur_primaire", d.primaire], ["couleur_gris", d.gris], ["couleur_sombre", d.sombre]];
+          return ecrire(actionsInstallation(etat.doc, etat.cfg, { creerPersonnes: false, paires: paires })).then(function () { etat.design = null; });
+        }, "Design enregistré. Rechargez les widgets pour le voir.", ["btn-design-enreg"]);
+      } }),
+      h("button", { type: "button", classe: "secondaire", disabled: etat.occupe, texte: "Annuler les modifications", onclick: function () { etat.design = null; etat.focus = ["btn-design-enreg"]; rendre(); } }),
+      h("button", { type: "button", classe: "secondaire", disabled: etat.occupe, texte: "Rétablir les valeurs par défaut", onclick: function () { etat.design = Object.assign({}, DEF_DESIGN); etat.focus = ["btn-design-enreg"]; rendre(); } })
+    ]),
+    h("h3", { texte: "Aperçu" }),
+    h("p", { classe: "vide", texte: "L'aperçu utilise le vrai fichier bandeau.js, avec vos liens et les réglages ci-dessus, même non enregistrés. Les liens de l'aperçu ne mènent nulle part." }),
+    h("div", { classe: "rang" }, [h("label", { "for": "d-ouvert", classe: "coche" }, [ouvert, "Afficher un menu ouvert"])]),
+    choixRole,
+    apercu]));
+  maj();
+  return sec;
+}
+
+// ==========================================================
+// AFFICHAGE
+// ==========================================================
+function ouvrirMapping() {
+  etat.brouillon = brouillonDepuis(etat.doc, etat.cfg, etat.an);
+  etat.vue = "mapping";
+  rendre();
+}
+
+function ouvrirMappingSur(table) {
+  etat.brouillon = { table: table, cols: deviner(etat.doc.tables[table] || []) };
+  etat.vue = "mapping";
+  rendre();
+}
+
+function rendre() {
+  var r = document.getElementById("racine");
+  r.textContent = "";
+  if (!etat.doc) return;
+  var installe = etat.an.usersOk && etat.an.liensOk && !etat.an.colsManquantes.length;
+  if (etat.vue === "mapping") r.appendChild(vueMapping());
+  else {
+    if (installe) r.appendChild(vueOnglets());
+    r.appendChild(installe && etat.onglet === "liens" ? vueLiens() : installe && etat.onglet === "design" ? vueDesign() : installe && etat.onglet === "widgets" ? vueWidgets() : (etat.an.usersOk ? vueEtapes() : vueChoix()));
+  }
+  if (etat.focus) {   // un élément reconstruit perd le focus : on le rend à la personne
+    var ids = [].concat(etat.focus);
+    etat.focus = null;
+    for (var i = 0; i < ids.length; i++) {
+      var el = document.getElementById(ids[i]);
+      if (el && !el.disabled) { el.focus(); if (el.tagName === "TEXTAREA") el.select(); break; }
+    }
+  }
+}
+
+function vueChoix() {
+  var doc = etat.doc, candidates = tablesCandidates(), existe = !!doc.tables[T_PERSONNES];
+  return h("section", { "aria-labelledby": "t-choix" }, [
+    h("h2", { id: "t-choix", texte: "Comment connecter le bandeau à vos personnes ?" }),
+    h("p", { texte: "Le bandeau a besoin d'une table qui liste les personnes (adresse e-mail, nom, rôle). Choisissez selon l'état de ce document." }),
+    h("div", { classe: "cartes" }, [
+      existe ? h("div", { classe: "carte" }, [
+        h("h3", { texte: "Une table « Utilisateurs » existe déjà" }),
+        h("p", { texte: "Le widget ne crée jamais une table qui porte déjà ce nom. Utilisez-la : ses colonnes seront reconnues automatiquement, et vos données ne sont pas modifiées." }),
+        h("ul", {}, [h("li", { texte: "Seules Bandeau_liens et Bandeau_config sont créées" })]),
+        h("button", { type: "button", disabled: etat.occupe, onclick: function () { ouvrirMappingSur(T_PERSONNES); }, texte: "Utiliser cette table" })
+      ]) : h("div", { classe: "carte" }, [
+        h("h3", { texte: "Créer les tables automatiquement" }),
+        h("p", { texte: "Pour un document neuf, sans table de personnes." }),
+        h("ul", {}, [h("li", { texte: "Utilisateurs (Email, Nom_Complet, Role)" }), h("li", { texte: "Bandeau_liens" }), h("li", { texte: "Bandeau_config" })]),
+        h("button", { type: "button", disabled: etat.occupe, onclick: function () { lancer(function () { return installer(true); }, "Tables créées."); }, texte: "Créer les tables" })
+      ]),
+      h("div", { classe: "carte" }, [
+        h("h3", { texte: "Utiliser ma table de personnes existante" }),
+        h("p", { texte: "Pour un document déjà en service : vous indiquez la table et les colonnes à utiliser. Vos données ne sont pas modifiées." }),
+        h("ul", {}, [h("li", { texte: "Seules Bandeau_liens et Bandeau_config sont créées" }), h("li", { texte: "Le mapping reste modifiable ensuite" })]),
+        candidates.length ? null : h("p", { texte: "Ce document ne contient aucune table de personnes à relier." }),
+        h("button", { type: "button", disabled: !candidates.length || etat.occupe, onclick: ouvrirMapping, texte: "Configurer le mapping" })
+      ])
+    ]),
+    h("p", { texte: "Chaque table créée apparaît aussi comme une page du document." })
+  ]);
+}
+
+function vueMapping() {
+  var doc = etat.doc, b = etat.brouillon, selects = [];
+  var erreurForm = h("p", { role: "alert" });
+  var selTable = h("select", { id: "m-table", onchange: function () { b.table = selTable.value; b.cols = deviner(doc.tables[b.table] || []); peupler(); } });
+  tablesCandidates().forEach(function (t) { selTable.appendChild(h("option", { value: t, texte: t })); });
+  selTable.value = b.table;
+  var sec = h("section", { "aria-labelledby": "t-map" }, [
+    h("h2", { id: "t-map", texte: "Indiquer votre table des personnes" }),
+    h("p", { texte: "Choisissez la table qui contient les personnes, puis les colonnes à utiliser. Vos données ne sont pas modifiées." }),
+    h("label", { "for": "m-table", texte: "Table des personnes" }), selTable
+  ]);
+  CHAMPS.forEach(function (c, i) {
+    var s = h("select", { id: "m-c" + i, "aria-required": c.requis ? "true" : null, onchange: function () { b.cols[c.cle] = s.value; } });
+    selects.push(s);
+    sec.appendChild(h("label", { "for": "m-c" + i, texte: c.libelle + (c.requis ? " (obligatoire)" : " (facultatif)") }));
+    sec.appendChild(s);
+  });
+  function peupler() {
+    var cols = doc.tables[b.table] || [];
+    CHAMPS.forEach(function (c, i) {
+      var s = selects[i];
+      s.textContent = "";
+      s.appendChild(h("option", { value: "", texte: c.requis ? "— Choisir une colonne —" : "— Non utilisé —" }));
+      cols.forEach(function (k) { s.appendChild(h("option", { value: k.id, texte: k.id + (k.label && k.label !== k.id ? " (" + k.label + ")" : "") })); });
+      s.value = b.cols[c.cle] || "";
+    });
+  }
+  peupler();
+  sec.appendChild(h("p", { texte: "Si vous changez de table ou de colonne e-mail, la règle d'accès devra être posée de nouveau ; l'ancienne règle n'est pas supprimée automatiquement." }));
+  sec.appendChild(erreurForm);
+  sec.appendChild(h("div", { classe: "actions" }, [
+    h("button", { type: "button", disabled: etat.occupe, texte: "Enregistrer et continuer", onclick: function () {
+      var e = validerMapping(b);
+      erreurForm.textContent = e;
+      if (!e) lancer(function () { return installer(false); }, "Configuration enregistrée.");
+    } }),
+    h("button", { type: "button", classe: "secondaire", disabled: etat.occupe, texte: "Annuler", onclick: function () { etat.vue = "etapes"; rendre(); } })
+  ]));
+  return sec;
+}
+
+function vueEtapes() {
+  var an = etat.an, doc = etat.doc, v = etat.cfg.valeurs;
+  function etape(titre, ok, detail, actions) {
+    return h("div", { classe: "etape" }, [
+      h("span", { classe: "badge " + (ok ? "ok" : "avert"), texte: ok ? "Fait" : "À faire" }),
+      h("div", {}, [h("h3", { texte: titre }), h("p", { texte: detail })].concat(actions || []))
+    ]);
+  }
+  var champsChoisis = CHAMPS.filter(function (c) { return v[c.cle]; }).map(function (c) { return c.libelle + " : « " + v[c.cle] + " »"; });
+  var manquantes = [!an.liensOk ? T_LIENS : null, !an.configOk ? T_CONFIG : null].filter(Boolean);
+  var etape3;
+  if (an.regle.protege) {
+    etape3 = etape("3. Règle d'accès", true, "Une règle interdit la lecture de la colonne « " + an.colEmail + " » aux autres lignes de la table « " + an.table + " ». Chaque personne ne voit que son propre e-mail.");
+  } else {
+    var nb = doc.ressources.filter(function (r) { return r.tableId === an.table; }).length;
+    etape3 = etape("3. Règle d'accès", false,
+      "Pour reconnaître la personne connectée, la colonne « " + an.colEmail + " » de la table « " + an.table + " » ne doit être lisible que sur sa propre ligne. " +
+      "Règle ajoutée : si l'e-mail de la personne connectée est différent de celui de la ligne, la lecture de cette colonne est refusée.", [
+        h("p", { texte: "Règles déjà présentes sur cette table : " + nb + ". Aucune règle existante n'est modifiée ni supprimée. Seul un propriétaire du document peut ajouter une règle ; le widget peut se recharger ensuite." }),
+        h("div", { classe: "actions" }, [h("button", { type: "button", disabled: etat.occupe, texte: "Poser la règle d'accès", onclick: function () { lancer(poserRegle, "Règle d'accès posée."); } })]),
+        h("details", {}, [
+          h("summary", { texte: "Je préfère la poser moi-même" }),
+          h("p", { texte: "Ouvrez « Règles d'accès », ajoutez une règle de colonne pour la table « " + an.table + " », colonne « " + an.colEmail + " », avec la condition  user.Email != rec." + an.colEmail + "  et refusez la lecture. Placez cette règle en première position. Le diagnostic vérifiera ensuite sa présence." })
+        ])
+      ]);
+  }
+  return h("section", { "aria-labelledby": "t-install" }, [
+    h("h2", { id: "t-install", texte: "Installation" }),
+    etape("1. Table des personnes", true, "Table « " + an.table + " ». " + champsChoisis.join(" ; ") + ".", [
+      h("div", { classe: "actions" }, [h("button", { type: "button", classe: "secondaire", disabled: etat.occupe, texte: "Modifier le mapping", onclick: ouvrirMapping })])]),
+    etape("2. Tables du bandeau", !manquantes.length && !an.colsManquantes.length,
+      manquantes.length ? "Tables manquantes : " + manquantes.join(", ") + "."
+        : an.colsManquantes.length ? "Colonnes manquantes : " + an.colsManquantes.map(function (m) { return m.table + "." + m.col.id; }).join(", ") + ". Elles sont nécessaires au bandeau France Travail ; vos données ne sont pas modifiées."
+        : "Les tables " + T_LIENS + " et " + T_CONFIG + " sont présentes, avec toutes leurs colonnes.",
+      manquantes.length || an.colsManquantes.length ? [h("div", { classe: "actions" }, [h("button", { type: "button", disabled: etat.occupe, texte: manquantes.length ? "Créer les tables manquantes" : "Compléter les tables", onclick: function () {
+        etat.brouillon = brouillonDepuis(doc, etat.cfg, an);
+        lancer(function () { return installer(false); }, manquantes.length ? "Tables créées." : "Tables complétées.");
+      } })])] : []),
+    etape3,
+    an.liensOk ? h("div", { classe: "actions" }, [h("button", { type: "button", disabled: etat.occupe, texte: "Gérer les liens du menu", onclick: function () { etat.onglet = "liens"; rendre(); } })]) : null
+  ]);
+}
+
+// ==========================================================
+// DIAGNOSTIC
+// ==========================================================
+async function diagnostiquer() {
+  var r = [];
+  function ajouter(statut, nom, detail, aide) { r.push({ statut: statut, nom: nom, detail: detail, aide: aide || "" }); }
+  var doc;
+  try { doc = await lireDocument(); }
+  catch (e) {
+    ajouter("erreur", "Accès au document", "Lecture impossible (" + msg(e) + ").", "Dans le panneau du widget, réglez l'accès sur « Accès complet au document ».");
+    return r;
+  }
+  var cfg = await lireConfig(doc), an = analyser(doc, cfg), v = cfg.valeurs;
+  ajouter("ok", "Accès au document", "Le widget lit la structure du document.");
+
+  [[T_LIENS, COLS_LIENS], [T_CONFIG, COLS_CONFIG]].forEach(function (p) {
+    var cols = doc.tables[p[0]], nom = "Table « " + p[0] + " »";
+    if (!cols) { ajouter("erreur", nom, "Table introuvable.", "Lancez l'installation pour la créer."); return; }
+    var manque = p[1].filter(function (c) { return !cols.some(function (k) { return k.id === c.id; }); }).map(function (c) { return c.id; });
+    if (manque.length) ajouter("erreur", nom, "Colonnes manquantes : " + manque.join(", ") + ".", "Dans l'onglet Installation, cliquez sur « Compléter les tables » (ou ajoutez ces colonnes avec exactement ces identifiants, sans accent).");
+    else ajouter("ok", nom, "Table et colonnes présentes.");
+  });
+
+  if (!an.table) { ajouter("erreur", "Table des personnes", "Aucune table n'est configurée.", "Lancez l'installation."); return r; }
+  if (!doc.tables[an.table]) { ajouter("erreur", "Table des personnes", "La table « " + an.table + " » n'existe plus.", "Modifiez le mapping dans l'installation."); return r; }
+  if (!an.usersOk) { ajouter("erreur", "Table des personnes", "La colonne e-mail « " + an.colEmail + " » est introuvable dans « " + an.table + " ».", "Modifiez le mapping dans l'installation."); return r; }
+  ajouter("ok", "Table des personnes", "Table « " + an.table + " », e-mail dans la colonne « " + an.colEmail + " ».");
+
+  var cols = doc.tables[an.table], perdues = CHAMPS.filter(function (c) {
+    return c.cle !== "users.email" && v[c.cle] && !cols.some(function (k) { return k.id === v[c.cle]; });
+  }).map(function (c) { return c.libelle + " (« " + v[c.cle] + " »)"; });
+  if (perdues.length) ajouter("avert", "Colonnes facultatives", "Colonnes introuvables : " + perdues.join(", ") + ".", "Modifiez le mapping, ou rétablissez la colonne.");
+
+  var regle = chercherRegle(doc, an.table, an.colEmail);
+  if (regle.protege) ajouter("ok", "Règle d'accès", "Une règle refuse la lecture de « " + an.colEmail + " » (ligne par ligne).");
+  else ajouter("erreur", "Règle d'accès", "Aucune règle ne masque la colonne « " + an.colEmail + " ».", "Posez la règle depuis l'installation. Sans elle, chacun voit les e-mails de tous et le bandeau ne peut pas reconnaître la personne.");
+
+  try {
+    var tab = await grist.docApi.fetchTable(an.table), emails = tab[an.colEmail] || [], vis = [];
+    emails.forEach(function (x, i) { if (emailLisible(x)) vis.push(i); });
+    if (vis.length === 1) {
+      var k = vis[0], nom = "";
+      if (v["users.nom_complet"] && tab[v["users.nom_complet"]]) nom = String(tab[v["users.nom_complet"]][k] || "").trim();
+      if (!nom && (v["users.prenom"] || v["users.nom"])) nom = ((tab[v["users.prenom"]] || [])[k] || "") + " " + ((tab[v["users.nom"]] || [])[k] || "");
+      var roles = v["users.role"] && tab[v["users.role"]] ? liste(tab[v["users.role"]][k]) : [];
+      ajouter("ok", "Personne connectée", "Vous êtes reconnu·e : " + (nom.trim() || "(nom non renseigné)") + (roles.length ? ", rôle : " + roles.join(", ") : ", sans rôle") + ".");
+    } else if (!vis.length) {
+      ajouter("avert", "Personne connectée", "Aucune adresse e-mail lisible : votre adresse n'est pas dans la table, ou la table est vide.", "Ajoutez la personne dans la table avec son adresse e-mail Grist.");
+    } else {
+      ajouter("avert", "Personne connectée", vis.length + " adresses sont lisibles : impossible de savoir laquelle est la vôtre.", "C'est normal pour un propriétaire du document, ou si la règle d'accès est absente. Testez avec un compte éditeur ou lecteur.");
+    }
+  } catch (e) { ajouter("erreur", "Lecture de la table des personnes", "Impossible de lire « " + an.table + " » (" + msg(e) + ").", "Vérifiez les règles d'accès de cette table."); }
+
+  if (doc.tables[T_LIENS]) {
+    try {
+      var l = lignes(await grist.docApi.fetchTable(T_LIENS));
+      var actifs = l.filter(function (x) { return x.Actif && !vide(x.Titre) && (!vide(x.Url) || !vide(x.Page)); });
+      if (actifs.length) ajouter("ok", "Liens du menu", actifs.length + " lien(s) actif(s).");
+      else ajouter("avert", "Liens du menu", "Aucun lien actif.", "Ajoutez un lien dans l'onglet « Liens du menu ».");
+    } catch (e) { ajouter("erreur", "Lecture des liens", "Impossible de lire « " + T_LIENS + " » (" + msg(e) + ").", "Vérifiez que les règles d'accès autorisent la lecture de cette table pour tous les profils."); }
+  }
+  return r;
+}
+
+function afficherDiag(r) {
+  var z = document.getElementById("zone-diag");
+  z.textContent = "";
+  var n = { ok: 0, avert: 0, erreur: 0 };
+  r.forEach(function (x) { n[x.statut]++; });
+  z.appendChild(h("p", { texte: n.erreur + " erreur(s), " + n.avert + " point(s) à vérifier, " + n.ok + " contrôle(s) réussi(s)." }));
+  var ul = h("ul", { classe: "diag" });
+  r.forEach(function (x) {
+    ul.appendChild(h("li", {}, [
+      h("span", { classe: "badge " + x.statut, texte: { ok: "OK", avert: "À vérifier", erreur: "Erreur" }[x.statut] }),
+      " ", h("strong", { texte: x.nom + " : " }), x.detail,
+      x.aide ? h("div", { classe: "aide", texte: "Que faire : " + x.aide }) : null
+    ]));
+  });
+  z.appendChild(ul);
+  z.focus();
+}
+
+// ==========================================================
+// DÉMARRAGE
+// ==========================================================
+grist.ready({ requiredAccess: "full" });
+document.getElementById("btn-actualiser").addEventListener("click", async function () { info(""); await charger(); rendre(); });
+document.getElementById("btn-diag").addEventListener("click", async function () {
+  var b = this; b.disabled = true; info("Vérification en cours…");
+  try { afficherDiag(await diagnostiquer()); } finally { b.disabled = false; info(""); }
+});
+(async function () {
+  await charger();
+  if (etat.an && etat.an.usersOk && etat.an.liensOk && !etat.an.colsManquantes.length && etat.an.regle.protege) etat.onglet = "liens";
+  rendre();
+})();
+</script>
+</body>
+</html>
