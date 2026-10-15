@@ -83,7 +83,7 @@
     <button type="button" id="btn-diag">Vérifier l'installation</button>
     <div id="zone-diag" tabindex="-1"></div>
   </section>
-  <footer>Version France Travail 0.3.0 : installation, diagnostic, liens du menu, design et widgets du document.</footer>
+  <footer>Version France Travail 0.4.0 : installation, diagnostic, liens du menu, design et widgets du document.</footer>
 </main>
 
 <script>
@@ -402,12 +402,21 @@ function groupesConnus() {
   return res.sort(function (a, b) { return a.localeCompare(b, "fr"); });
 }
 
-function formVide() { return { id: null, titre: "", cible: "url", page: "", url: "", roles: [], autre: "", onglet: false, emplacement: "navigation", groupe: "", icone: "" }; }
+// Groupe : « groupeChoix » vaut "" (aucun groupe), le nom d'un groupe existant, ou "__nouveau__" (nom saisi dans « groupeNouveau »).
+function groupeCanonique(nom) {   // un groupe existant, à la casse et aux accents près, est réutilisé tel qu'il est écrit
+  return groupesConnus().filter(function (x) { return normaliser(x) === normaliser(nom); })[0] || "";
+}
+function groupeFinal(f) {
+  if (f.emplacement !== "navigation") return "";
+  var g = f.groupeChoix === "__nouveau__" ? f.groupeNouveau.trim() : String(f.groupeChoix || "").trim();
+  return groupeCanonique(g) || g;
+}
+function formVide() { return { id: null, titre: "", cible: "url", page: "", url: "", roles: [], autre: "", onglet: false, emplacement: "navigation", groupeChoix: "", groupeNouveau: "", icone: "" }; }
 function formDepuis(l) {
-  var c = cibleDe(l), ic = String(l.Icone || "");
+  var c = cibleDe(l), ic = String(l.Icone || ""), g = String(l.Groupe == null ? "" : l.Groupe).trim(), canon = groupeCanonique(g);
   return { id: l.id, titre: String(l.Titre || ""), cible: c.type === "page" ? "page" : "url", page: c.page ? String(c.page) : "", url: c.url || "",
     roles: liste(l.Roles), autre: "", onglet: !!l.Nouvel_onglet, emplacement: estUtilisateur(l) ? "utilisateur" : "navigation",
-    groupe: String(l.Groupe == null ? "" : l.Groupe).trim(), icone: ICONES_MENU.some(function (p) { return p[0] === ic; }) ? ic : "" };
+    groupeChoix: g ? (canon || "__nouveau__") : "", groupeNouveau: g && !canon ? g : "", icone: ICONES_MENU.some(function (p) { return p[0] === ic; }) ? ic : "" };
 }
 function rolesDuForm(f) {
   var tous = f.roles.concat(String(f.autre || "").split(/[,;]/)).map(function (r) { return r.trim(); }).filter(Boolean);
@@ -419,13 +428,14 @@ function validerLien(f, pages) {
   if (f.cible === "page") {
     if (!pages.some(function (p) { return String(p.viewRef) === String(f.page); })) return "Choisissez une page du document.";
   } else if (!urlHttps(f.url)) return "L'adresse doit commencer par https:// (exemple : https://exemple.fr/outil).";
-  if (f.emplacement === "navigation" && f.groupe.trim().length > 40) return "Le nom du groupe est trop long (40 caractères maximum).";
+  if (f.emplacement === "navigation" && f.groupeChoix === "__nouveau__" && !f.groupeNouveau.trim()) return "Saisissez le nom du nouveau groupe, ou choisissez « Aucun groupe ».";
+  if (groupeFinal(f).length > 40) return "Le nom du groupe est trop long (40 caractères maximum).";
   return "";
 }
 function valeursLien(f, avecRoles) {
   var util = f.emplacement === "utilisateur";
   var v = { Titre: f.titre.trim(), Url: f.cible === "url" ? urlHttps(f.url) : "", Page: f.cible === "page" ? Number(f.page) : 0,
-    Nouvel_onglet: !!f.onglet, Emplacement: util ? "Utilisateur" : "Navigation", Groupe: util ? "" : f.groupe.trim(), Icone: util ? f.icone : "" };   // « Actif » n'est pas touché à la modification : c'est le bouton Activer / Désactiver de la liste
+    Nouvel_onglet: !!f.onglet, Emplacement: util ? "Utilisateur" : "Navigation", Groupe: groupeFinal(f), Icone: util ? f.icone : "" };   // « Actif » n'est pas touché à la modification : c'est le bouton Activer / Désactiver de la liste
   if (avecRoles) { var r = rolesDuForm(f); v.Roles = r.length ? ["L"].concat(r) : null; }   // sans « Roles » : on ne touche pas aux rôles existants
   return v;
 }
@@ -566,15 +576,21 @@ function vueFormLien() {
     ].concat(cases, [h("label", { "for": "f-autre", texte: "Autres rôles (séparés par des virgules)" }), autre]));
   }
 
-  var groupe = h("input", { type: "text", id: "f-groupe", maxlength: "40", value: f.groupe, list: "f-groupes", oninput: function () { f.groupe = groupe.value; } });
-  var listeG = h("datalist", { id: "f-groupes" }, groupesConnus().map(function (g) { return h("option", { value: g }); }));
+  var selGroupe = h("select", { id: "f-groupe-choix", onchange: function () { f.groupeChoix = selGroupe.value; majPlace(); if (f.groupeChoix === "__nouveau__") nouveau.focus(); } });
+  selGroupe.appendChild(h("option", { value: "", texte: "Aucun groupe (bouton simple dans la barre)" }));
+  groupesConnus().forEach(function (g) { selGroupe.appendChild(h("option", { value: g, texte: g })); });
+  selGroupe.appendChild(h("option", { value: "__nouveau__", texte: "Nouveau groupe…" }));
+  selGroupe.value = f.groupeChoix;
+  var nouveau = h("input", { type: "text", id: "f-groupe", maxlength: "40", value: f.groupeNouveau, oninput: function () { f.groupeNouveau = nouveau.value; } });
   var selIcone = h("select", { id: "f-icone", onchange: function () { f.icone = selIcone.value; } });
   ICONES_MENU.forEach(function (p) { selIcone.appendChild(h("option", { value: p[0], texte: p[1] })); });
   selIcone.value = f.icone;
-  var blocGroupe = h("div", {}, [h("label", { "for": "f-groupe", texte: "Groupe (facultatif)" }), groupe, listeG,
-    h("p", { classe: "vide", texte: "Les liens qui portent le même groupe sont réunis sous un bouton déroulant de ce nom. Sans groupe, le lien est un bouton simple de la barre." })]);
+  var blocNouveau = h("div", {}, [h("label", { "for": "f-groupe", texte: "Nom du nouveau groupe" }), nouveau,
+    h("p", { classe: "vide", texte: "Si ce nom existe déjà (majuscules et accents ignorés), le groupe existant est réutilisé." })]);
+  var blocGroupe = h("div", {}, [h("label", { "for": "f-groupe-choix", texte: "Groupe (facultatif)" }), selGroupe,
+    h("p", { classe: "vide", texte: "Choisissez un groupe existant pour y ajouter ce lien, ou « Nouveau groupe… » pour en créer un. Les liens d'un même groupe sont réunis sous un bouton déroulant de ce nom ; sans groupe, le lien est un bouton simple de la barre." }), blocNouveau]);
   var blocIcone = h("div", {}, [h("label", { "for": "f-icone", texte: "Icône (facultatif)" }), selIcone]);
-  function majPlace() { blocGroupe.hidden = f.emplacement !== "navigation"; blocIcone.hidden = f.emplacement !== "utilisateur"; }
+  function majPlace() { blocGroupe.hidden = f.emplacement !== "navigation"; blocNouveau.hidden = f.groupeChoix !== "__nouveau__"; blocIcone.hidden = f.emplacement !== "utilisateur"; }
   function radioPlace(val, id, texte) {
     var r = h("input", { type: "radio", name: "f-place", id: id, value: val, checked: f.emplacement === val, onchange: function () { f.emplacement = val; majPlace(); } });
     return h("label", { "for": id, classe: "coche" }, [r, texte]);
