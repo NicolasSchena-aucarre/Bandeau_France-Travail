@@ -1,5 +1,5 @@
 /* ==========================================================
-   bandeau.js — bandeau de navigation « France Travail » pour widgets Grist (version 0.1.0)
+   bandeau.js — bandeau de navigation « France Travail » pour widgets Grist (version 0.2.0)
 
    UTILISATION, dans le <head> d'un widget personnalisé, APRÈS le script de l'API Grist :
 
@@ -11,8 +11,8 @@
    - data-titre est facultatif : il s'ajoute au titre du menu (« Titre du menu - Nom du widget »).
    - Tout le reste (titre, logos, couleurs, liens, groupes, menu utilisateur, rôles) est lu dans les tables
      du document : Bandeau_config, Bandeau_liens et la table des personnes. Aucun fichier à régénérer.
-   - Le fichier n'appelle aucun service externe (hors adresses des logos) et n'utilise aucune police web :
-     police système, comme le prévoit le design system France Travail.
+   - Appels externes : les logos (adresses fournies) et, sauf si police_marianne = non, la police Marianne (gras) depuis
+     cdn.jsdelivr.net. Le reste utilise la police système, comme le prévoit le design system France Travail.
    - Dépannage : dans la console du widget, taper  BandeauMenu.etat()
 
    Les rôles ne servent qu'à masquer des liens dans le menu : ce n'est PAS une sécurité.
@@ -24,13 +24,16 @@
   var NOM = "BandeauMenu";
   if (window[NOM]) return;   // fichier chargé deux fois : une seule instance
 
-  var VERSION = "bandeau-ft-0.1.0";
+  var VERSION = "bandeau-ft-0.2.0";
   var T_CONFIG = "Bandeau_config", T_LIENS = "Bandeau_liens";
   var DELAIS = [0, 400, 1000, 2000, 4000, 8000];   // le widget peut appeler grist.ready() après le chargement de ce fichier
   var DELAI_LECTURE = 5000;                         // une lecture sans réponse est abandonnée puis retentée
   // Palette par défaut = design system France Travail : white, gray-90, france-travail-50, gray-05, gray-90.
   var DEFAUT = { fond: "#ffffff", texte: "#2e2e31", primaire: "#283276", gris: "#f5f5f8", sombre: "#2e2e31" };
   var ALT_DEFAUT = ["République Française", "France Travail"];
+  // Police des titres du design system de l'État (Marianne), chargée seulement en gras, une seule fois, et désactivable (police_marianne = non).
+  // Elle doit être déclarée dans le document : un @font-face placé dans un Shadow DOM n'est pas chargé.
+  var URL_MARIANNE = "https://cdn.jsdelivr.net/npm/@gouvfr/dsfr/dist/fonts/Marianne-Bold.woff2";
   var ICONES = {"chevron": "<path d=\"M6 9l6 6 6-6\"/>", "maison": "<path d=\"M4 11.2 12 4l8 7.2\"/><path d=\"M6 10v10h12V10\"/><path d=\"M10 20v-5.5h4V20\"/>", "engrenage": "<path d=\"M18.70 10.34 L20.95 9.85 L20.95 14.15 L18.70 13.66 L17.91 15.56 L19.84 16.81 L16.81 19.84 L15.56 17.91 L13.66 18.70 L14.15 20.95 L9.85 20.95 L10.34 18.70 L8.44 17.91 L7.19 19.84 L4.16 16.81 L6.09 15.56 L5.30 13.66 L3.05 14.15 L3.05 9.85 L5.30 10.34 L6.09 8.44 L4.16 7.19 L7.19 4.16 L8.44 6.09 L10.34 5.30 L9.85 3.05 L14.15 3.05 L13.66 5.30 L15.56 6.09 L16.81 4.16 L19.84 7.19 L17.91 8.44Z\"/><circle cx=\"12\" cy=\"12\" r=\"2.9\"/>", "deconnexion": "<path d=\"M10 4H5v16h5\"/><path d=\"M15 8l4 4-4 4\"/><path d=\"M19 12H9\"/>"};   // nom -> contenu SVG (viewBox 24, trait) ; constantes du fichier, jamais de données du document
 
   var script = document.currentScript || document.querySelector("script[src*='bandeau'][data-titre]");
@@ -101,6 +104,14 @@
     var initiales = prenom.charAt(0) + nom.charAt(0);
     if (complet) { var mots = complet.split(/\s+/); initiales = mots[0].charAt(0) + (mots.length > 1 ? mots[mots.length - 1].charAt(0) : ""); }
     return { label: complet || (prenom + " " + nom).trim(), initiales: initiales.toUpperCase() };
+  }
+  function chargerMarianne(actif) {
+    var present = document.getElementById("bm-marianne");
+    if (!actif) { if (present) present.remove(); return; }
+    if (present) return;
+    var st = el("style", null, { id: "bm-marianne" });
+    st.textContent = '@font-face{ font-family:"Marianne"; src:url("' + URL_MARIANNE + '") format("woff2"); font-weight:700; font-display:swap; }';
+    document.head.appendChild(st);   // sans la police (réseau, blocage) : retour automatique à la police système
   }
   function icone(nom, cls) {   // SVG décoratif : le texte du lien porte le sens
     var t = document.createElement("template");
@@ -177,24 +188,24 @@
     return c;
   }
   function feuille(c) {
-    var police = "'SF Pro Text',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif";
+    var police = "'SF Pro Text',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif";
     return [
       ":host{ display:block; position:sticky; top:0; z-index:20; font-family:" + police + "; --f:" + c.fond + "; --t:" + c.texte + "; --p:" + c.primaire + "; --g:" + c.gris + "; --s:" + c.sombre + "; --tp:" + c.surPrimaire + "; --ts:" + c.surSombre + "; }",
       "*{ box-sizing:border-box; }",
       "[hidden]{ display:none !important; }",
       "/* EN-TÊTE */",
       ".ft-header{ background:var(--f); color:var(--t); box-shadow:0 4px 8px rgba(15,20,56,.08); padding:0 1rem; }",
-      ".ft-inner{ max-width:90rem; margin:0 auto; min-height:5rem; display:flex; align-items:center; flex-wrap:wrap; gap:.5rem 1.5rem; padding:.75rem 0; }",
+      ".ft-inner{ max-width:90rem; margin:0 auto; min-height:6.25rem; display:flex; align-items:center; flex-wrap:wrap; gap:.5rem 1.5rem; padding:1.25rem 0; }",
       "/* LOGOS ET TITRE */",
       ".ft-logos{ display:flex; align-items:center; gap:1rem; flex:none; }",
       ".ft-logo{ display:flex; border-radius:.25rem; }",
-      ".ft-logo-img{ display:block; height:3.5rem; width:auto; max-width:14rem; object-fit:contain; }",
+      ".ft-logo-img{ display:block; height:3.75rem; width:auto; max-width:14rem; object-fit:contain; }",
       ".ft-titre{ font-family:Marianne," + police + "; font-size:1rem; font-weight:700; line-height:1.25rem; color:var(--p); }",
       "/* NAVIGATION */",
       ".ft-nav{ flex:1 1 auto; min-width:0; }",
       ".ft-liste{ list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:.5rem; }",
       ".ft-item{ position:relative; }",
-      ".ft-btn{ display:inline-flex; align-items:center; gap:.5rem; min-height:2.75rem; padding:.5rem 1rem; border:0; border-radius:.75rem; background:transparent; color:var(--t); font:inherit; font-size:1rem; font-weight:500; line-height:1.5rem; text-decoration:none; cursor:pointer; }",
+      ".ft-btn{ display:inline-flex; align-items:center; gap:.5rem; min-height:3rem; padding:.5rem 1rem; border:0; border-radius:.75rem; background:transparent; color:var(--t); font:inherit; font-size:1rem; font-weight:500; line-height:1.5rem; text-decoration:none; cursor:pointer; }",
       ".ft-btn:hover, .ft-btn[aria-expanded=\"true\"]{ background:var(--g); }",
       ".ft-chev{ width:1rem; height:1rem; flex:none; transition:transform .15s; }",
       "[aria-expanded=\"true\"] > .ft-chev{ transform:rotate(180deg); }",
@@ -218,12 +229,14 @@
       ".ft-vide{ margin:0; padding:.5rem .75rem; font-size:.875rem; }",
       ".ft-sr{ position:absolute; clip-path:inset(50%); overflow:hidden; white-space:nowrap; }",
       "/* ACCESSIBILITÉ */",
-      ".ft-btn:focus-visible, .ft-user:focus-visible, .ft-panel a:focus-visible, a.ft-logo:focus-visible{ outline:3px solid var(--t); outline-offset:2px; }",
+      ".ft-btn:focus-visible, .ft-user:focus-visible, .ft-panel a:focus-visible{ outline:3px solid var(--t); outline-offset:2px; }",
+      "/* au clic de souris, pas d'anneau de focus : il reste affiché pour la navigation au clavier */",
+      ":host([data-pointeur]) .ft-btn:focus, :host([data-pointeur]) .ft-user:focus, :host([data-pointeur]) .ft-panel a:focus{ outline:none; }",
       "@media (prefers-reduced-motion: reduce){ .ft-chev{ transition:none; } }",
       "/* ADAPTATION */",
       "@media (min-width:1240px){ .ft-header{ padding:0 1.25rem; } }",
       "@media (max-width:899px){ .ft-nav{ order:3; flex-basis:100%; } }",
-      "@media (max-width:599px){ .ft-inner{ min-height:4rem; } .ft-logo-img{ height:2.5rem; } .ft-user-nom{ max-width:9rem; } }"
+      "@media (max-width:599px){ .ft-inner{ min-height:4rem; padding:.75rem 0; } .ft-logo-img{ height:2.5rem; } .ft-user-nom{ max-width:9rem; } }"
     ].join("\n");
   }
 
@@ -251,6 +264,8 @@
     ui = { host: host, style: style, logos: logos, titre: titre, nav: nav, liste: listeNav, statut: statut, utilisateur: utilisateur };
     titre.textContent = titreWidget; titre.hidden = !titreWidget;
 
+    host.addEventListener("pointerdown", function () { host.setAttribute("data-pointeur", ""); }, true);   // interaction à la souris
+    document.addEventListener("keydown", function () { host.removeAttribute("data-pointeur"); }, true);    // clavier : l'anneau de focus revient
     document.addEventListener("click", function (e) {   // un clic ailleurs ferme les menus
       var chemin = e.composedPath();
       if (!groupes.some(function (g) { return chemin.indexOf(g.conteneur) !== -1; })) fermerTout();
@@ -302,6 +317,7 @@
   function appliquer(d) {
     var c = couleurs(d.cfg);
     ui.style.textContent = feuille(c);
+    chargerMarianne(String(d.cfg.police_marianne || "oui").trim().toLowerCase() !== "non");
 
     ui.logos.textContent = "";   // deux logos facultatifs : adresse vide = rien d'affiché
     [1, 2].forEach(function (n) {
@@ -309,8 +325,7 @@
       if (!src) return;
       var alt = String(d.cfg["logo" + n + "_alt"] || "").trim() || ALT_DEFAUT[n - 1];
       var img = el("img", "ft-logo-img", { src: src, alt: alt });
-      var lien = urlHttps(d.cfg["logo" + n + "_lien"]);
-      var cadre = lien ? el("a", "ft-logo", { href: lien, target: "_top", rel: "noopener" }) : el("span", "ft-logo");
+      var cadre = el("span", "ft-logo");
       cadre.appendChild(img); ui.logos.appendChild(cadre);
     });
     ui.logos.hidden = !ui.logos.childNodes.length;

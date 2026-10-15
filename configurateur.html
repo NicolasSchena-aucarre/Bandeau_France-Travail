@@ -78,7 +78,7 @@
     <button type="button" id="btn-diag">Vérifier l'installation</button>
     <div id="zone-diag" tabindex="-1"></div>
   </section>
-  <footer>Version France Travail 0.1.0 : installation, diagnostic, liens du menu, design et widgets du document.</footer>
+  <footer>Version France Travail 0.2.0 : installation, diagnostic, liens du menu, design et widgets du document.</footer>
 </main>
 
 <script>
@@ -99,7 +99,7 @@ var COLS_CONFIG = [{ id: "Cle", type: "Text" }, { id: "Valeur", type: "Text" }];
 var COLS_PERSONNES = [{ id: "Email", type: "Text" }, { id: "Nom_Complet", type: "Text" }, { id: "Role", type: "ChoiceList" }];
 
 // Réglages créés avec leur valeur par défaut (jamais écrasés s'ils existent déjà).
-var CONFIG_DEFAUT = [["titre", ""], ["logo1_url", ""], ["logo1_alt", "République Française"], ["logo1_lien", ""], ["logo2_url", ""], ["logo2_alt", "France Travail"], ["logo2_lien", ""],
+var CONFIG_DEFAUT = [["titre", ""], ["logo1_url", ""], ["logo1_alt", "République Française"], ["logo2_url", ""], ["logo2_alt", "France Travail"], ["police_marianne", "oui"],
   ["couleur_fond", "#ffffff"], ["couleur_texte", "#2e2e31"], ["couleur_primaire", "#283276"], ["couleur_gris", "#f5f5f8"], ["couleur_sombre", "#2e2e31"]];
 
 // Champs de la table des personnes : clé de configuration, libellé, reconnaissance automatique.
@@ -397,12 +397,12 @@ function groupesConnus() {
   return res.sort(function (a, b) { return a.localeCompare(b, "fr"); });
 }
 
-function formVide() { return { id: null, titre: "", cible: "url", page: "", url: "", roles: [], autre: "", onglet: false, emplacement: "navigation", groupe: "", icone: "", actif: true }; }
+function formVide() { return { id: null, titre: "", cible: "url", page: "", url: "", roles: [], autre: "", onglet: false, emplacement: "navigation", groupe: "", icone: "" }; }
 function formDepuis(l) {
   var c = cibleDe(l), ic = String(l.Icone || "");
   return { id: l.id, titre: String(l.Titre || ""), cible: c.type === "page" ? "page" : "url", page: c.page ? String(c.page) : "", url: c.url || "",
     roles: liste(l.Roles), autre: "", onglet: !!l.Nouvel_onglet, emplacement: estUtilisateur(l) ? "utilisateur" : "navigation",
-    groupe: String(l.Groupe == null ? "" : l.Groupe).trim(), icone: ICONES_MENU.some(function (p) { return p[0] === ic; }) ? ic : "", actif: !!l.Actif };
+    groupe: String(l.Groupe == null ? "" : l.Groupe).trim(), icone: ICONES_MENU.some(function (p) { return p[0] === ic; }) ? ic : "" };
 }
 function rolesDuForm(f) {
   var tous = f.roles.concat(String(f.autre || "").split(/[,;]/)).map(function (r) { return r.trim(); }).filter(Boolean);
@@ -420,7 +420,7 @@ function validerLien(f, pages) {
 function valeursLien(f, avecRoles) {
   var util = f.emplacement === "utilisateur";
   var v = { Titre: f.titre.trim(), Url: f.cible === "url" ? urlHttps(f.url) : "", Page: f.cible === "page" ? Number(f.page) : 0,
-    Nouvel_onglet: !!f.onglet, Emplacement: util ? "Utilisateur" : "Navigation", Groupe: util ? "" : f.groupe.trim(), Icone: util ? f.icone : "", Actif: !!f.actif };
+    Nouvel_onglet: !!f.onglet, Emplacement: util ? "Utilisateur" : "Navigation", Groupe: util ? "" : f.groupe.trim(), Icone: util ? f.icone : "" };   // « Actif » n'est pas touché à la modification : c'est le bouton Activer / Désactiver de la liste
   if (avecRoles) { var r = rolesDuForm(f); v.Roles = r.length ? ["L"].concat(r) : null; }   // sans « Roles » : on ne touche pas aux rôles existants
   return v;
 }
@@ -428,6 +428,7 @@ function actionsLien(f, liens, avecRoles) {
   var v = valeursLien(f, avecRoles);
   if (f.id) return [["UpdateRecord", T_LIENS, f.id, v]];
   v.Ordre = liens.reduce(function (m, l) { return vide(l.Ordre) ? m : Math.max(m, Number(l.Ordre)); }, 0) + 1;   // en dernier
+  v.Actif = true;   // un nouveau lien est actif d'emblée
   return [["AddRecord", T_LIENS, null, v]];
 }
 // Échange avec le voisin puis renumérote tout (1, 2, 3…) : un seul appel, et ça règle les Ordre vides ou en double.
@@ -577,7 +578,6 @@ function vueFormLien() {
     radioPlace("navigation", "f-place-nav", "Dans la barre de navigation"), radioPlace("utilisateur", "f-place-user", "Dans le menu utilisateur (sous le nom de la personne)"), blocGroupe, blocIcone]);
   majPlace();
   var onglet = h("input", { type: "checkbox", id: "f-onglet", checked: f.onglet, onchange: function () { f.onglet = onglet.checked; } });
-  var actif = h("input", { type: "checkbox", id: "f-actif", checked: f.actif, onchange: function () { f.actif = actif.checked; } });
 
   return h("div", { classe: "panneau" }, [
     h("h3", { texte: f.id ? "Modifier le lien" : "Ajouter un lien" }),
@@ -586,7 +586,6 @@ function vueFormLien() {
     champPlace,
     champRoles,
     h("label", { "for": "f-onglet", classe: "coche" }, [onglet, "Ouvrir dans un nouvel onglet"]),
-    h("label", { "for": "f-actif", classe: "coche" }, [actif, "Lien actif (affiché dans le menu)"]),
     erreurForm,
     h("div", { classe: "actions" }, [
       h("button", { type: "button", disabled: etat.occupe, texte: "Enregistrer", onclick: function () {
@@ -812,7 +811,7 @@ function vueWidgets() {
 // ==========================================================
 // DESIGN DU BANDEAU
 // ==========================================================
-var DEF_DESIGN = { titre: "", logo1: "", alt1: "République Française", lien1: "", logo2: "", alt2: "France Travail", lien2: "",
+var DEF_DESIGN = { titre: "", marianne: true, logo1: "", alt1: "République Française", logo2: "", alt2: "France Travail",
   fond: "#ffffff", texte: "#2e2e31", primaire: "#283276", gris: "#f5f5f8", sombre: "#2e2e31" };   // design system France Travail : white, gray-90, france-travail-50, gray-05, gray-90
 var CHAMPS_COULEUR = [
   { cle: "fond", libelle: "Fond du bandeau" },
@@ -849,19 +848,19 @@ function texteSur(hex) {   // blanc ou noir : celui qui contraste le plus avec l
 function designDepuis(v) {
   function c(x, d) { x = normaliserHex(x); return hexValide(x) ? x : d; }
   function a(x, d) { return x === undefined ? d : String(x); }
-  return { titre: v.titre || "", logo1: v.logo1_url || "", alt1: a(v.logo1_alt, DEF_DESIGN.alt1), lien1: v.logo1_lien || "",
-    logo2: v.logo2_url || "", alt2: a(v.logo2_alt, DEF_DESIGN.alt2), lien2: v.logo2_lien || "",
+  return { titre: v.titre || "", marianne: String(v.police_marianne || "oui").trim().toLowerCase() !== "non",
+    logo1: v.logo1_url || "", alt1: a(v.logo1_alt, DEF_DESIGN.alt1),
+    logo2: v.logo2_url || "", alt2: a(v.logo2_alt, DEF_DESIGN.alt2),
     fond: c(v.couleur_fond, DEF_DESIGN.fond), texte: c(v.couleur_texte, DEF_DESIGN.texte), primaire: c(v.couleur_primaire, DEF_DESIGN.primaire),
     gris: c(v.couleur_gris, DEF_DESIGN.gris), sombre: c(v.couleur_sombre, DEF_DESIGN.sombre) };
 }
 function validerDesign(d) {
   if (d.titre.trim().length > 60) return "Le titre est trop long (60 caractères maximum).";
   for (var n = 1; n <= 2; n++) {
-    var u = d["logo" + n].trim(), a = d["alt" + n].trim(), l = d["lien" + n].trim();
+    var u = d["logo" + n].trim(), a = d["alt" + n].trim();
     if (u && !urlHttps(u)) return "Logo " + n + " : l'adresse de l'image doit commencer par https:// (exemple : https://exemple.fr/logo.svg).";
     if (u && !a) return "Logo " + n + " : le texte alternatif est obligatoire quand une adresse est saisie (par exemple : " + DEF_DESIGN["alt" + n] + ").";
     if (a.length > 120) return "Logo " + n + " : le texte alternatif est trop long (120 caractères maximum).";
-    if (l && !urlHttps(l)) return "Logo " + n + " : le lien doit commencer par https://.";
   }
   var manque = CHAMPS_COULEUR.filter(function (c) { return !hexValide(normaliserHex(d[c.cle])); })[0];
   return manque ? manque.libelle + " : format attendu #rrggbb (exemple : #283276)." : "";
@@ -876,8 +875,8 @@ function versColonnes(lignesTab, ids) {   // l'inverse de lignes() : le bandeau 
 // (réglages en cours de saisie), les vrais liens du document et une personne fictive.
 function htmlApercu() {
   var d = etat.design, role = etat.apercuRole || "";
-  var cfg = [["titre", d.titre.trim()], ["logo1_url", d.logo1.trim()], ["logo1_alt", d.alt1.trim()], ["logo1_lien", d.lien1.trim()],
-    ["logo2_url", d.logo2.trim()], ["logo2_alt", d.alt2.trim()], ["logo2_lien", d.lien2.trim()],
+  var cfg = [["titre", d.titre.trim()], ["police_marianne", d.marianne ? "oui" : "non"], ["logo1_url", d.logo1.trim()], ["logo1_alt", d.alt1.trim()],
+    ["logo2_url", d.logo2.trim()], ["logo2_alt", d.alt2.trim()],
     ["couleur_fond", normaliserHex(d.fond)], ["couleur_texte", normaliserHex(d.texte)], ["couleur_primaire", normaliserHex(d.primaire)],
     ["couleur_gris", normaliserHex(d.gris)], ["couleur_sombre", normaliserHex(d.sombre)],
     ["users.table", "Apercu"], ["users.email", "Email"], ["users.nom_complet", "Nom_Complet"], ["users.role", "Role"]];
@@ -938,7 +937,6 @@ function vueDesign() {
     return h("fieldset", {}, [h("legend", { texte: n === 1 ? "Logo 1 (à gauche)" : "Logo 2" })].concat(
       champ("d-logo" + n, "Adresse de l'image (fichier .svg, en https://)", "logo" + n, { placeholder: "https://exemple.fr/logo.svg" }),
       champ("d-alt" + n, "Texte alternatif (obligatoire si une adresse est saisie)", "alt" + n, { maxlength: "120" }),
-      champ("d-lien" + n, "Lien au clic sur le logo (facultatif, en https://)", "lien" + n),
       [h("p", { classe: "vide", texte: "Adresse vide : le logo n'est pas affiché." })]));
   }
   var champsCouleur = CHAMPS_COULEUR.map(function (c) {
@@ -949,6 +947,7 @@ function vueDesign() {
     return h("div", {}, [h("label", { "for": "d-" + c.cle, texte: c.libelle }), h("div", { classe: "rang" }, [pipette, texte])]);
   });
 
+  var marianne = h("input", { type: "checkbox", id: "d-marianne", checked: d.marianne, onchange: function () { d.marianne = marianne.checked; maj(); } });
   var ouvert = h("input", { type: "checkbox", id: "d-ouvert", checked: etat.apercuOuvert !== false, onchange: function () { etat.apercuOuvert = ouvert.checked; maj(); } });
   var roles = etat.rolesConnus, choixRole = null;
   if (rolesGeres() && roles.length) {
@@ -964,7 +963,9 @@ function vueDesign() {
     h("p", { texte: "Réglages essentiels, communs à tous les widgets qui affichent le bandeau. Ils sont pris en compte au prochain chargement de chaque widget. Les valeurs par défaut sont celles du design system France Travail." })
   ].concat(
     champ("d-titre", "Titre du menu (facultatif, 60 caractères maximum)", "titre", { maxlength: "60" }),
-    [blocLogo(1), blocLogo(2),
+    [h("label", { "for": "d-marianne", classe: "coche" }, [marianne, "Utiliser la police Marianne pour le titre"]),
+    h("p", { classe: "vide", texte: "La police est chargée depuis cdn.jsdelivr.net, le réseau de diffusion du design system de l'État. Décochée, le titre utilise la police du système et aucun fichier n'est chargé." }),
+    blocLogo(1), blocLogo(2),
     h("fieldset", {}, [h("legend", { texte: "Couleurs" })].concat(champsCouleur, [contrastes])),
     erreurForm,
     h("div", { classe: "actions" }, [
@@ -974,8 +975,8 @@ function vueDesign() {
         erreurForm.textContent = e;
         if (e) return;
         lancer(function () {
-          var paires = [["titre", d.titre.trim()], ["logo1_url", d.logo1.trim()], ["logo1_alt", d.alt1.trim()], ["logo1_lien", d.lien1.trim()],
-            ["logo2_url", d.logo2.trim()], ["logo2_alt", d.alt2.trim()], ["logo2_lien", d.lien2.trim()],
+          var paires = [["titre", d.titre.trim()], ["police_marianne", d.marianne ? "oui" : "non"], ["logo1_url", d.logo1.trim()], ["logo1_alt", d.alt1.trim()],
+            ["logo2_url", d.logo2.trim()], ["logo2_alt", d.alt2.trim()],
             ["couleur_fond", d.fond], ["couleur_texte", d.texte], ["couleur_primaire", d.primaire], ["couleur_gris", d.gris], ["couleur_sombre", d.sombre]];
           return ecrire(actionsInstallation(etat.doc, etat.cfg, { creerPersonnes: false, paires: paires })).then(function () { etat.design = null; });
         }, "Design enregistré. Rechargez les widgets pour le voir.", ["btn-design-enreg"]);

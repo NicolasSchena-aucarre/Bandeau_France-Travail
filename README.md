@@ -82,12 +82,14 @@ et la même logique : tout est réglé dans Grist. `v1/` n'est pas modifié.
   `Emplacement` (« Navigation » ou « Utilisateur ») et `Groupe` (des liens de même groupe sont réunis sous un bouton déroulant).
   Sur un document déjà installé avec `v1/`, le configurateur `ft/` propose « Compléter les tables » : il ajoute les colonnes
   et les réglages manquants sans toucher aux données existantes.
-- **Deux logos facultatifs** (adresse, texte alternatif obligatoire, lien facultatif) : adresse vide, rien d'affiché.
+- **Deux logos facultatifs** (adresse, texte alternatif obligatoire) : adresse vide, rien d'affiché. Les logos ne sont pas cliquables.
 - **Réglages de design** dans `Bandeau_config` : `logo1_*`, `logo2_*`, `couleur_fond`, `couleur_texte`, `couleur_primaire`,
   `couleur_gris`, `couleur_sombre`. Valeurs par défaut : white, gray-90, france-travail-50, gray-05, gray-90.
 - **Pas de recherche, de notifications ni de menu burger** (volontairement). Sur écran étroit, le bandeau passe sur plusieurs lignes.
-- **Polices** : police système (SF Pro Text puis Segoe UI, Roboto…), comme le prévoit le design system ; la police Marianne
-  est utilisée pour le titre si elle est installée sur la machine, sinon la police système.
+- **Polices** : police système (SF Pro Text, system-ui, Segoe UI, Roboto…), comme le prévoit le design system. Le titre utilise
+  Marianne (gras), chargée depuis `cdn.jsdelivr.net` ; réglage `police_marianne` (`oui` par défaut, `non` pour ne rien charger,
+  case dans l'onglet Design). Sans la police, retour automatique à la police système.
+- **Dimensions** (mesurées sur le site de France Travail) : header de 100 px, logos de 60 px de haut, boutons de 48 px.
 - **Logos** : ce sont des adresses fournies par le client ; rien n'est embarqué dans ces fichiers.
 
 Mêmes règles que `v1/` : les trois fichiers de `ft/` restent dans le même dossier, et la règle de version et de sécurité s'applique.
